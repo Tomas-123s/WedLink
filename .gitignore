@@ -1,0 +1,21 @@
+﻿# .NET build output
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Node and frontend build output
+**/node_modules/
+**/dist/
+
+# Local secrets and machine-specific settings
+.env
+.env.*
+!.env.example
+**/appsettings.*.local.json
+
+# IDE and operating-system files
+.idea/
+.DS_Store
+Thumbs.db

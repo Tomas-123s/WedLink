@@ -1,0 +1,4 @@
+﻿@WedLink.API_HostAddress = http://localhost:5072
+
+GET {{WedLink.API_HostAddress}}/api/v1/health
+Accept: application/json

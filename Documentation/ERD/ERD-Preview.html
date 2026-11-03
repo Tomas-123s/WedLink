@@ -1,0 +1,258 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WedLink ERD Preview</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    body { margin: 0; padding: 24px; background: #f5f7fa; color: #17212f; font: 15px/1.5 Segoe UI, Arial, sans-serif; }
+    header { max-width: 1400px; margin: 0 auto 16px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p { margin: 0; color: #536273; }
+    main { max-width: 1400px; margin: auto; padding: 24px; overflow: auto; background: white; border: 1px solid #d9e0e8; border-radius: 10px; }
+    .mermaid { min-width: 1100px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WedLink — Database Design (ERD)</h1>
+    <p>Visual preview of the proposed entities and relationships. Open this file in a browser with an internet connection.</p>
+  </header>
+  <main>
+    <pre class="mermaid">
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--o{ ORDER_STATUS_HISTORY : tracks
+    ORDER ||--o{ ORDER_ADDON : includes
+    ADDON ||--o{ ORDER_ADDON : selected_as
+    ORDER ||--o{ PAYMENT : has
+    ORDER ||--o{ PRIVATE_LINK_TOKEN : grants_submission_or_preview
+    ORDER ||--o| INVITATION : produces
+    TEMPLATE_VERSION ||--o{ ORDER : selected_for_order
+
+    TEMPLATE ||--|{ TEMPLATE_VERSION : has_versions
+    TEMPLATE_VERSION ||--o{ TEMPLATE_FEATURE : supports
+    FEATURE ||--o{ TEMPLATE_FEATURE : describes
+    TEMPLATE_VERSION ||--o{ TEMPLATE_ADDON : offers
+    ADDON ||--o{ TEMPLATE_ADDON : available_on
+    TEMPLATE_VERSION ||--o{ INVITATION : renders
+
+    INVITATION ||--o{ INVITATION_CUSTOMIZATION : configures
+    INVITATION ||--o{ INVITATION_MEDIA : contains
+    INVITATION ||--o{ RSVP_RESPONSE : receives
+    INVITATION ||--o{ GUEST_MESSAGE : receives
+    INVITATION ||--o{ PREVIEW_REVIEW_EVENT : records
+    MUSIC_TRACK o|--o{ INVITATION : selected_builtin_track
+
+    ADMIN_USER ||--o{ AUDIT_LOG : performs
+
+    CUSTOMER {
+        int CustomerId PK
+        string Name
+        string Phone
+        string Email "Optional"
+        string Notes "Optional"
+        datetime CreatedAt
+        datetime UpdatedAt "Optional"
+        datetime DeletedAt "Optional"
+    }
+
+    ORDER {
+        int OrderId PK
+        int CustomerId FK
+        int SelectedTemplateVersionId FK
+        string Status
+        decimal AgreedBasePrice
+        string Currency
+        datetime CreatedAt
+        datetime UpdatedAt "Optional"
+        datetime DeletedAt "Optional"
+    }
+
+    ORDER_STATUS_HISTORY {
+        int OrderStatusHistoryId PK
+        int OrderId FK
+        string PreviousStatus "Optional"
+        string NewStatus
+        int ChangedByAdminUserId FK
+        datetime ChangedAt
+        string Note "Optional"
+    }
+
+    PAYMENT {
+        int PaymentId PK
+        int OrderId FK
+        decimal Amount
+        string Method
+        string Status
+        datetime PaymentDate
+        string Notes "Optional"
+        int RecordedByAdminUserId FK
+        datetime CreatedAt
+    }
+
+    TEMPLATE {
+        int TemplateId PK
+        string Name
+        string Description "Optional"
+        string PreviewImageReference "Optional"
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt "Optional"
+    }
+
+    TEMPLATE_VERSION {
+        int TemplateVersionId PK
+        int TemplateId FK
+        string VersionNumber
+        string PackageKey
+        bool IsActive
+        datetime CreatedAt
+    }
+
+    FEATURE {
+        int FeatureId PK
+        string Key
+        string Name
+        string Description "Optional"
+    }
+
+    TEMPLATE_FEATURE {
+        int TemplateVersionId PK, FK
+        int FeatureId PK, FK
+        bool IsEnabled
+        string LimitsJson
+    }
+
+    ADDON {
+        int AddonId PK
+        string Name
+        string Description "Optional"
+        decimal CurrentPrice
+        string Currency
+        bool IsActive
+    }
+
+    TEMPLATE_ADDON {
+        int TemplateVersionId PK, FK
+        int AddonId PK, FK
+    }
+
+    ORDER_ADDON {
+        int OrderAddonId PK
+        int OrderId FK
+        int AddonId FK
+        decimal PriceAtPurchase
+        string NameAtPurchase
+    }
+
+    PRIVATE_LINK_TOKEN {
+        int PrivateLinkTokenId PK
+        int OrderId FK
+        string TokenHash
+        string Purpose
+        datetime ExpiresAt
+        datetime CreatedAt
+        datetime RevokedAt "Optional"
+        datetime UsedAt "Optional"
+    }
+
+    INVITATION {
+        int InvitationId PK
+        int OrderId FK
+        int TemplateVersionId FK
+        string Slug
+        string Status
+        datetime WeddingDateTimeLocal
+        string TimeZoneId
+        string CoupleNames
+        string VenueName "Optional"
+        string VenueAddress "Optional"
+        string LocationUrl "Optional"
+        datetime PublishedAt "Optional"
+        datetime ExpiresAt
+        datetime MediaDeleteAt
+        datetime PausedAt "Optional"
+        string FinalPngStorageKey "Optional"
+        datetime CreatedAt
+        datetime UpdatedAt "Optional"
+    }
+
+    INVITATION_CUSTOMIZATION {
+        int InvitationCustomizationId PK
+        int InvitationId FK
+        string Key
+        string ValueJson
+    }
+
+    INVITATION_MEDIA {
+        int InvitationMediaId PK
+        int InvitationId FK
+        string MediaType
+        string OriginalFileName
+        string ContentType
+        long SizeBytes
+        string StorageKey
+        int SortOrder
+        datetime UploadedAt
+        datetime DeletedAt "Optional"
+    }
+
+    MUSIC_TRACK {
+        int MusicTrackId PK
+        string Title
+        string Artist "Optional"
+        string StorageKey
+        bool IsActive
+        datetime CreatedAt
+    }
+
+    RSVP_RESPONSE {
+        int RsvpResponseId PK
+        int InvitationId FK
+        string Response
+        string GuestName "Optional"
+        int AccompanyingPeople
+        string EditTokenHash "Optional"
+        datetime SubmittedAt
+        datetime UpdatedAt "Optional"
+    }
+
+    PREVIEW_REVIEW_EVENT {
+        int PreviewReviewEventId PK
+        int InvitationId FK
+        string EventType
+        int PreviewVersion
+        string CustomerNote "Optional"
+        datetime OccurredAt
+    }
+
+    GUEST_MESSAGE {
+        int GuestMessageId PK
+        int InvitationId FK
+        string GuestName "Optional"
+        string Message
+        datetime SubmittedAt
+        datetime DeletedAt "Optional"
+    }
+
+    ADMIN_USER {
+        string AdminUserId PK
+        string IdentityUserFields
+    }
+
+    AUDIT_LOG {
+        long AuditLogId PK
+        string AdminUserId FK
+        string Action
+        string EntityType
+        string EntityId
+        string ChangeDetailsJson "Optional"
+        datetime CreatedAt
+    }
+    </pre>
+  </main>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', er: { layoutDirection: 'TB' } });</script>
+</body>
+</html>

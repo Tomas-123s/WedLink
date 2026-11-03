@@ -1,0 +1,161 @@
+﻿# WedLink — API Plan
+
+**Status:** Task P0-T3 draft for review
+**Base prefix:** `/api/v1`
+**Format:** JSON over HTTPS. Public invitation media is served through configured storage URLs or a controlled media endpoint.
+
+This is a route and responsibility plan, not a final OpenAPI contract. Request/response DTOs and exact status codes will be designed with each API task.
+
+## Conventions
+
+- Admin routes require authentication and a backend authorization policy unless explicitly stated public.
+- Public routes are rate-limited and return only fields safe for guests.
+- Use `GET` for reads, `POST` for creation/actions, `PUT` for replacing a submitted resource, and `PATCH` only for a small partial update where it improves clarity.
+- Use pagination for dashboard lists. Support a small, explicit set of filters and search terms.
+- Use stable IDs in admin routes. Use the public invitation slug for guest viewing.
+- Do not return EF/database entities directly. Use request and response DTOs.
+- Return consistent Problem Details errors. Never include stack traces, secrets, raw private tokens, or private customer data in public errors.
+- Put raw private tokens in the authorization header/body after the frontend loads the private page; do not include them in ordinary application logs or analytics.
+
+## Endpoint groups
+
+### 1. Admin authentication
+
+| Method | Route | Purpose |
+|---|---|---|
+| POST | `/admin/auth/login` | Sign an admin in |
+| POST | `/admin/auth/logout` | End the admin session |
+| GET | `/admin/auth/me` | Return current admin identity and permitted actions |
+
+Identity and the final cookie/CSRF configuration are implemented with the authentication task.
+
+### 2. Customers
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/customers` | Search and paginate customers |
+| POST | `/admin/customers` | Create a customer |
+| GET | `/admin/customers/{customerId}` | View customer details and related order/payment summaries |
+| PUT | `/admin/customers/{customerId}` | Update customer contact details and notes |
+
+Customers have no login endpoints or customer dashboard.
+
+### 3. Orders and private submission links
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/orders` | Search/filter/paginate orders |
+| POST | `/admin/orders` | Create an order with customer, selected template version, base price, and add-ons |
+| GET | `/admin/orders/{orderId}` | View order, status history, payments, submission state, and invitation summary |
+| PATCH | `/admin/orders/{orderId}/status` | Move an order through an allowed workflow status |
+| POST | `/admin/orders/{orderId}/submission-links` | Generate or rotate a private customer submission link |
+| DELETE | `/admin/orders/{orderId}/submission-links/{linkId}` | Revoke a private link |
+| GET | `/customer-submissions/current` | Read the order form associated with the private-link credential |
+| PUT | `/customer-submissions/current` | Submit/update wedding information and customization selections |
+| POST | `/customer-submissions/current/media` | Upload a file after server validation |
+| DELETE | `/customer-submissions/current/media/{mediaId}` | Remove an uploaded file before admin review, subject to workflow rules |
+
+A submission credential is scoped to one order, expires, and can be revoked. Raw token handling must follow the security conventions above.
+
+### 4. Templates, versions, features, and add-ons
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/templates` | List templates and active versions |
+| POST | `/admin/templates` | Register template metadata |
+| GET | `/admin/templates/{templateId}` | View template metadata and version history |
+| PATCH | `/admin/templates/{templateId}/status` | Activate or deactivate template selection for new orders |
+| POST | `/admin/templates/{templateId}/versions` | Register a trusted, deployed template version |
+| GET | `/admin/template-versions/{versionId}` | View features, limits, and available add-ons |
+| PUT | `/admin/template-versions/{versionId}/features` | Configure supported features and limits |
+| PUT | `/admin/template-versions/{versionId}/addons` | Configure available add-ons |
+| POST | `/admin/template-versions/{versionId}/activate` | Activate a version for new orders |
+| GET | `/admin/addons` | List add-ons |
+| POST | `/admin/addons` | Create an add-on |
+| PUT | `/admin/addons/{addonId}` | Update current add-on metadata and price |
+
+These endpoints manage metadata and trusted code registrations, not arbitrary executable uploads. Existing invitations remain attached to their saved version.
+
+### 5. Invitations and private preview
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/invitations` | Search/filter/paginate invitations |
+| GET | `/admin/invitations/{invitationId}` | View invitation, media, review events, and lifecycle dates |
+| PUT | `/admin/invitations/{invitationId}` | Edit invitation details and supported customizations |
+| POST | `/admin/invitations/{invitationId}/preview-links` | Create a private preview link |
+| POST | `/admin/invitations/{invitationId}/publish` | Publish an approved invitation |
+| POST | `/admin/invitations/{invitationId}/pause` | Temporarily pause a valid invitation |
+| POST | `/admin/invitations/{invitationId}/reactivate` | Reactivate a paused invitation before expiry |
+| POST | `/admin/invitations/{invitationId}/extend` | Extend a valid invitation before expiry |
+| GET | `/previews/current` | Read preview data using its private credential |
+| POST | `/previews/current/reviews` | Submit approval or a change request and append a review event |
+
+The backend enforces that a preview is private, the invitation is not public before publication, and an expired invitation cannot be republished or reactivated.
+
+### 6. Public invitation and guest actions
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/public/invitations/{slug}` | Get a published invitation or its event-ended representation |
+| POST | `/public/invitations/{slug}/rsvps` | Create an RSVP response or update one using the browser-held edit token |
+| POST | `/public/invitations/{slug}/messages` | Submit a congratulation message if enabled |
+
+Public responses include only enabled template sections and guest-safe content. RSVP count means one responding guest plus additional companions for a Yes response; No contributes zero. Guest message visibility follows invitation settings.
+
+### 7. RSVP and guest-message administration
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/invitations/{invitationId}/rsvps` | View RSVP responses and attendance summary |
+| GET | `/admin/invitations/{invitationId}/messages` | View guest messages |
+| DELETE | `/admin/invitations/{invitationId}/messages/{messageId}` | Remove an inappropriate message and record the action |
+
+### 8. Music and media
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/public/music-tracks` | List active built-in tracks safe for customer selection |
+| GET | `/admin/music-tracks` | List tracks for administration |
+| POST | `/admin/music-tracks` | Add a licensed/authorized library track and metadata |
+| PUT | `/admin/music-tracks/{trackId}` | Update track metadata or active status |
+| POST | `/admin/invitations/{invitationId}/media` | Admin upload/replace invitation media |
+| DELETE | `/admin/invitations/{invitationId}/media/{mediaId}` | Remove unsuitable media before publication |
+
+Customer music upload uses the private submission credential and the same file-validation/storage rules as other uploads. The API does not accept executable template packages.
+
+### 9. Payments
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/orders/{orderId}/payments` | List payment records |
+| POST | `/admin/orders/{orderId}/payments` | Record a payment/installment |
+| PUT | `/admin/payments/{paymentId}` | Correct payment details with audit history, subject to policy |
+| GET | `/admin/orders/{orderId}/balance` | Return server-calculated base price, add-ons, paid amount, and balance |
+
+Financial values are decimal amounts. The total is the agreed base price plus add-on price snapshots. The client cannot set the calculated balance or payment status directly.
+
+### 10. Dashboard, users, and audit
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/dashboard/summary` | Return invitation/order summary counts and available financial summaries |
+| GET | `/admin/users` | List admin users (permission restricted) |
+| POST | `/admin/users` | Create an admin account (Super Admin only) |
+| PUT | `/admin/users/{userId}/roles` | Assign roles/permissions (Super Admin only) |
+| GET | `/admin/audit-logs` | Search audit history (Super Admin only) |
+
+No visitor analytics endpoint is planned for the MVP.
+
+## Route shape and security notes
+
+- `{customerId}`, `{orderId}`, `{invitationId}`, and similar placeholders are database identifiers; they are not authorization credentials.
+- Public invitation slugs identify only public invitations. They must never grant access to an order, preview, customer submission, or admin data.
+- Private submission and preview credentials must be validated on every request and scoped to the relevant order/invitation.
+- RSVP edit tokens are separate from customer/admin credentials. A guest's browser can update only its own RSVP response.
+- Rate limit public RSVP, message, token validation, and upload endpoints.
+- Admin actions that change orders, invitations, payments, permissions, templates, or messages create audit records.
+
+## Not included in the MVP API
+
+Payment gateway callbacks, email/push notifications, visitor/page-view analytics, couple replies, customer accounts, and general customer dashboards.

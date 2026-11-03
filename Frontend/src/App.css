@@ -1,0 +1,99 @@
+﻿.app-shell {
+  min-height: 100vh;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: min(100% - 40px, 1080px);
+  margin: 0 auto;
+  padding: 24px 0;
+  border-bottom: 1px solid #e8e1d9;
+}
+
+.site-brand {
+  color: #6f4356;
+  font-size: 22px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.site-nav a {
+  color: #51474b;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: #8b6173;
+}
+
+.page-content {
+  display: grid;
+  width: min(100% - 40px, 1080px);
+  min-height: calc(100vh - 81px);
+  margin: 0 auto;
+  padding: 40px 0;
+  align-content: start;
+}
+
+.page-card {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 48px;
+  border: 1px solid #e8e1d9;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgb(56 44 31 / 8%);
+}
+
+.page-card__eyebrow {
+  margin: 0 0 12px;
+  color: #8b6173;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-card h1 {
+  margin: 0;
+  color: #30252a;
+  font-size: clamp(28px, 6vw, 42px);
+  line-height: 1.3;
+}
+
+.page-card p:last-child {
+  margin: 18px 0 0;
+  color: #51474b;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+@media (max-width: 520px) {
+  .site-header,
+  .page-content {
+    width: min(100% - 32px, 1080px);
+  }
+
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .page-content {
+    padding: 24px 0;
+  }
+
+  .page-card {
+    padding: 32px 24px;
+  }
+}
