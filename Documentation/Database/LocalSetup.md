@@ -53,6 +53,8 @@ dotnet run --project Backend\WedLink.API --launch-profile https
 فحص الصحة: `https://localhost:7270/api/v1/health`
 OpenAPI أثناء التطوير: `https://localhost:7270/openapi/v1.json`
 
+تُحفظ ملفات التقديم الخاصة محليًا خارج `wwwroot` في `Backend/WedLink.API/PrivateMedia` افتراضيًا، ولا يمكن فتحها كرابط عام. يمكن تغيير المسار بإعداد `Storage:CustomerSubmissionPath`. قاعدة البيانات تحفظ البيانات الوصفية ومفتاح التخزين فقط. مزود الإنتاج لم يُحدد بعد.
+
 ## تشغيل الاختبارات
 
 ```powershell

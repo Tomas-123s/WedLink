@@ -20,6 +20,60 @@ public sealed record ChangeOrderStatusRequest(
     public ChangeOrderStatusInput ToInput() => new(Status, Note);
 }
 
+public sealed record RecordOrderPaymentRequest(
+    [Range(typeof(decimal), "0.01", "99999999.99")] decimal Amount,
+    [Required, StringLength(40, MinimumLength = 1)] string Method,
+    [StringLength(200)] string? Reference,
+    [StringLength(1000)] string? Note)
+{
+    public RecordOrderPaymentInput ToInput() =>
+        new(Amount, Method, Reference, Note);
+}
+
+public sealed record CorrectOrderPaymentRequest(
+    [Range(typeof(decimal), "0.01", "99999999.99")] decimal Amount,
+    [Required, StringLength(40, MinimumLength = 1)] string Method,
+    [StringLength(200)] string? Reference,
+    [StringLength(1000)] string? Note,
+    [Required, StringLength(1000, MinimumLength = 1)] string Reason)
+{
+    public CorrectOrderPaymentInput ToInput() =>
+        new(Amount, Method, Reference, Note, Reason);
+}
+
+public sealed record OrderPaymentResponse(
+    int PaymentId,
+    int OrderId,
+    decimal Amount,
+    string Currency,
+    string Method,
+    string? Reference,
+    string? Note,
+    string RecordedByAdminUserId,
+    DateTimeOffset RecordedAt)
+{
+    public static OrderPaymentResponse FromData(OrderPaymentData payment) => new(
+        payment.PaymentId, payment.OrderId, payment.Amount, payment.Currency,
+        payment.Method, payment.Reference, payment.Note,
+        payment.RecordedByAdminUserId, payment.RecordedAt);
+}
+
+public sealed record OrderBalanceResponse(
+    int OrderId,
+    decimal AgreedBasePrice,
+    decimal AddOnsTotal,
+    decimal TotalAmount,
+    decimal PaidAmount,
+    decimal Balance,
+    string Currency,
+    IReadOnlyList<OrderPaymentResponse> Payments)
+{
+    public static OrderBalanceResponse FromData(OrderBalanceData balance) => new(
+        balance.OrderId, balance.AgreedBasePrice, balance.AddOnsTotal,
+        balance.TotalAmount, balance.PaidAmount, balance.Balance, balance.Currency,
+        balance.Payments.Select(OrderPaymentResponse.FromData).ToList());
+}
+
 public sealed record OrderAddOnResponse(
     int AddOnId,
     string NameAtPurchase,

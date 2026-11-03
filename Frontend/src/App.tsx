@@ -4,6 +4,8 @@ import { RequireAdmin } from './features/auth/RequireAdmin'
 import { AdminUsersPage } from './features/auth/AdminUsersPage'
 import { CustomersPage } from './features/customers/CustomersPage'
 import { TemplatesPage } from './features/templates/TemplatesPage'
+import { OrdersPage } from './features/orders/OrdersPage'
+import { CustomerSubmissionPage } from './features/customer-submission/CustomerSubmissionPage'
 import './App.css'
 
 function PageCard({ title, description }: { title: string; description: string }) {
@@ -23,6 +25,7 @@ function AdminPage() {
       <h1>لوحة الإدارة</h1>
       <p>اختر مهمة للبدء في إدارة WedLink.</p>
       <Link className="dashboard-link" to="/admin/customers">إدارة العملاء</Link>
+      <Link className="dashboard-link" to="/admin/orders">إدارة الطلبات والمدفوعات</Link>
       <Link className="dashboard-link" to="/admin/templates">إدارة القوالب والإضافات</Link>
       <Link className="dashboard-link" to="/admin/users">إدارة حسابات الإدارة</Link>
     </section>
@@ -36,15 +39,6 @@ function PublicInvitationPage() {
     <PageCard
       title="صفحة الدعوة"
       description={`مسار الدعوة العامة جاهز. رمز الدعوة الحالي: ${slug ?? ''}`}
-    />
-  )
-}
-
-function CustomerSubmissionPage() {
-  return (
-    <PageCard
-      title="إرسال بيانات الزفاف"
-      description="هذا مسار العميل الخاص، وسيُربط بنموذج الإرسال لاحقًا."
     />
   )
 }
@@ -86,6 +80,7 @@ function App() {
           <Route element={<LoginPage />} path="/login" />
           <Route element={<RequireAdmin><AdminPage /></RequireAdmin>} path="/admin/*" />
           <Route element={<RequireAdmin><CustomersPage /></RequireAdmin>} path="/admin/customers" />
+          <Route element={<RequireAdmin><OrdersPage /></RequireAdmin>} path="/admin/orders" />
           <Route element={<RequireAdmin><TemplatesPage /></RequireAdmin>} path="/admin/templates" />
           <Route element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} path="/admin/users" />
           <Route element={<PublicInvitationPage />} path="/invite/:slug" />

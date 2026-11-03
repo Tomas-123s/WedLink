@@ -5,6 +5,8 @@
     ADDON ||--o{ ORDER_ADDON : selected_as
     ORDER ||--o{ PAYMENT : has
     ORDER ||--o{ PRIVATE_LINK_TOKEN : grants_submission_or_preview
+    ORDER ||--o| CUSTOMER_WEDDING_SUBMISSION : collects
+    ORDER ||--o{ CUSTOMER_SUBMISSION_MEDIA : receives
     ORDER ||--o| INVITATION : produces
     TEMPLATE_VERSION ||--o{ ORDER : selected_for_order
 
@@ -133,6 +135,35 @@
         datetime CreatedAt
         datetime RevokedAt "Optional"
         datetime UsedAt "Optional"
+    }
+
+    CUSTOMER_WEDDING_SUBMISSION {
+        int CustomerWeddingSubmissionId PK
+        int OrderId FK "Unique"
+        string BrideName
+        string GroomName
+        datetime WeddingDateTimeLocal
+        string TimeZoneId
+        string VenueName "Optional"
+        string VenueAddress "Optional"
+        string LocationUrl "Optional"
+        json CustomizationsJson "Optional; supported template features only"
+        datetime SubmittedAt "Optional"
+        datetime AdminReviewedAt "Optional"
+        string AdminReviewedByUserId FK "Optional"
+    }
+
+    CUSTOMER_SUBMISSION_MEDIA {
+        int CustomerSubmissionMediaId PK
+        int OrderId FK
+        string OriginalFileName
+        string ContentType
+        long SizeBytes
+        string StorageKey
+        string MediaKind
+        datetime UploadedAt
+        datetime DeletedAt "Optional"
+        string DeletedByAdminUserId FK "Optional"
     }
 
     INVITATION {

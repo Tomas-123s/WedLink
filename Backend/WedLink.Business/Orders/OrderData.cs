@@ -7,6 +7,40 @@ public sealed record OrderAddOnData(
 
 public sealed record OrderAddOnInput(int AddOnId);
 
+public sealed record OrderPaymentData(
+    int PaymentId,
+    int OrderId,
+    decimal Amount,
+    string Currency,
+    string Method,
+    string? Reference,
+    string? Note,
+    string RecordedByAdminUserId,
+    DateTimeOffset RecordedAt);
+
+public sealed record OrderBalanceData(
+    int OrderId,
+    decimal AgreedBasePrice,
+    decimal AddOnsTotal,
+    decimal TotalAmount,
+    decimal PaidAmount,
+    decimal Balance,
+    string Currency,
+    IReadOnlyList<OrderPaymentData> Payments);
+
+public sealed record RecordOrderPaymentInput(
+    decimal Amount,
+    string Method,
+    string? Reference,
+    string? Note);
+
+public sealed record CorrectOrderPaymentInput(
+    decimal Amount,
+    string Method,
+    string? Reference,
+    string? Note,
+    string Reason);
+
 public sealed record OrderStatusHistoryData(
     string? PreviousStatus,
     string NewStatus,
@@ -110,5 +144,23 @@ public interface IOrderRepository
         string actorId,
         string? note,
         DateTimeOffset changedAt,
+        CancellationToken cancellationToken = default);
+
+    Task<OrderBalanceData?> GetBalanceAsync(
+        int orderId,
+        CancellationToken cancellationToken = default);
+
+    Task<OrderPaymentData?> RecordPaymentAsync(
+        int orderId,
+        RecordOrderPaymentInput input,
+        string actorId,
+        DateTimeOffset recordedAt,
+        CancellationToken cancellationToken = default);
+
+    Task<OrderPaymentData?> CorrectPaymentAsync(
+        int paymentId,
+        CorrectOrderPaymentInput input,
+        string actorId,
+        DateTimeOffset correctedAt,
         CancellationToken cancellationToken = default);
 }

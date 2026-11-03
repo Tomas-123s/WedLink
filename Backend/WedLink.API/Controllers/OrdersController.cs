@@ -70,6 +70,61 @@ public sealed class OrdersController(OrderService orderService) : ControllerBase
         });
     }
 
+    [HttpGet("{orderId:int}/payments")]
+    public async Task<IActionResult> GetPayments(
+        int orderId,
+        CancellationToken cancellationToken)
+    {
+        return await RunOrderAction(async () =>
+        {
+            var balance = await orderService.GetBalanceAsync(orderId, cancellationToken);
+            return Ok(balance.Payments.Select(OrderPaymentResponse.FromData).ToList());
+        });
+    }
+
+    [HttpPost("{orderId:int}/payments")]
+    public async Task<IActionResult> RecordPayment(
+        int orderId,
+        RecordOrderPaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await RunOrderAction(async () =>
+        {
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var payment = await orderService.RecordPaymentAsync(
+                orderId, request.ToInput(), actorId, cancellationToken);
+            return Created($"/api/v1/admin/orders/{orderId}/payments/{payment.PaymentId}",
+                OrderPaymentResponse.FromData(payment));
+        });
+    }
+
+    [HttpGet("{orderId:int}/balance")]
+    public async Task<IActionResult> GetBalance(
+        int orderId,
+        CancellationToken cancellationToken)
+    {
+        return await RunOrderAction(async () =>
+        {
+            var balance = await orderService.GetBalanceAsync(orderId, cancellationToken);
+            return Ok(OrderBalanceResponse.FromData(balance));
+        });
+    }
+
+    [HttpPut("/api/v1/admin/payments/{paymentId:int}")]
+    public async Task<IActionResult> CorrectPayment(
+        int paymentId,
+        CorrectOrderPaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await RunOrderAction(async () =>
+        {
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var payment = await orderService.CorrectPaymentAsync(
+                paymentId, request.ToInput(), actorId, cancellationToken);
+            return Ok(OrderPaymentResponse.FromData(payment));
+        });
+    }
+
     private async Task<IActionResult> RunOrderAction(Func<Task<IActionResult>> action)
     {
         try

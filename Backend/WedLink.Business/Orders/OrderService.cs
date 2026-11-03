@@ -115,6 +115,65 @@ public sealed class OrderService(IOrderRepository repository)
                ?? throw new OrderStatusConflictException();
     }
 
+    public async Task<OrderBalanceData> GetBalanceAsync(
+        int orderId,
+        CancellationToken cancellationToken = default)
+    {
+        if (orderId < 1) throw new OrderNotFoundException();
+        return await repository.GetBalanceAsync(orderId, cancellationToken)
+            ?? throw new OrderNotFoundException();
+    }
+
+    public async Task<OrderPaymentData> RecordPaymentAsync(
+        int orderId,
+        RecordOrderPaymentInput input,
+        string actorId,
+        CancellationToken cancellationToken = default)
+    {
+        if (orderId < 1) throw new OrderNotFoundException();
+        var method = input.Method?.Trim();
+        var reference = CleanOptional(input.Reference);
+        var note = CleanOptional(input.Note);
+        if (input.Amount <= 0 || input.Amount > MaximumMoneyAmount
+            || decimal.Round(input.Amount, 2) != input.Amount)
+            throw new OrderValidationException("The payment amount must be positive and have no more than two decimal places.");
+        if (string.IsNullOrWhiteSpace(method) || method.Length > 40)
+            throw new OrderValidationException("A payment method of up to 40 characters is required.");
+        if (reference?.Length > 200 || note?.Length > 1000)
+            throw new OrderValidationException("The payment reference or note exceeds its allowed length.");
+
+        return await repository.RecordPaymentAsync(orderId,
+            new RecordOrderPaymentInput(input.Amount, method, reference, note),
+            actorId, DateTimeOffset.UtcNow, cancellationToken)
+            ?? throw new OrderNotFoundException();
+    }
+
+    public async Task<OrderPaymentData> CorrectPaymentAsync(
+        int paymentId,
+        CorrectOrderPaymentInput input,
+        string actorId,
+        CancellationToken cancellationToken = default)
+    {
+        if (paymentId < 1) throw new OrderNotFoundException();
+        var method = input.Method?.Trim();
+        var reference = CleanOptional(input.Reference);
+        var note = CleanOptional(input.Note);
+        var reason = input.Reason?.Trim();
+        if (input.Amount <= 0 || input.Amount > MaximumMoneyAmount
+            || decimal.Round(input.Amount, 2) != input.Amount)
+            throw new OrderValidationException("The payment amount must be positive and have no more than two decimal places.");
+        if (string.IsNullOrWhiteSpace(method) || method.Length > 40)
+            throw new OrderValidationException("A payment method of up to 40 characters is required.");
+        if (reference?.Length > 200 || note?.Length > 1000
+            || string.IsNullOrWhiteSpace(reason) || reason.Length > 1000)
+            throw new OrderValidationException("The payment correction reason or details exceed their allowed length.");
+
+        return await repository.CorrectPaymentAsync(paymentId,
+            new CorrectOrderPaymentInput(input.Amount, method, reference, note, reason),
+            actorId, DateTimeOffset.UtcNow, cancellationToken)
+            ?? throw new OrderNotFoundException();
+    }
+
     private static void ValidateCreateInput(CreateOrderInput input)
     {
         if (input.CustomerId < 1 || input.SelectedTemplateVersionId < 1)

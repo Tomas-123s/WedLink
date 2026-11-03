@@ -11,6 +11,9 @@ using WedLink.Business.AdminAccounts;
 using WedLink.Business.Customers;
 using WedLink.Business.Templates;
 using WedLink.Business.Orders;
+using WedLink.Business.CustomerSubmissions;
+using WedLink.DataAccess.Storage;
+using System.Threading.RateLimiting;
 using WedLink.API.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +42,37 @@ builder.Services.AddScoped<FeatureService>();
 builder.Services.AddScoped<AddOnService>();
 builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<ICustomerSubmissionRepository, EfCustomerSubmissionRepository>();
+builder.Services.AddSingleton<IPrivateLinkTokenGenerator, PrivateLinkTokenGenerator>();
+builder.Services.AddScoped<CustomerSubmissionService>();
+builder.Services.AddSingleton<ISubmissionFileStorage>(_ => new LocalSubmissionFileStorage(
+    builder.Environment.ContentRootPath,
+    builder.Configuration["Storage:CustomerSubmissionPath"]));
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+    options.MultipartBodyLengthLimit = 110L * 1024 * 1024);
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 110L * 1024 * 1024);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("private-submission", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("private-upload", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
 
 builder.Services
     .AddIdentityCore<AdminUser>(options =>
@@ -122,6 +156,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

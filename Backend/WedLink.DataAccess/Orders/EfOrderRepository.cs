@@ -287,4 +287,100 @@ public sealed class EfOrderRepository(WedLinkDbContext dbContext) : IOrderReposi
         await dbContext.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(orderId, cancellationToken);
     }
+
+    public async Task<OrderBalanceData?> GetBalanceAsync(
+        int orderId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await dbContext.Orders.AsNoTracking()
+            .Where(item => item.OrderId == orderId && item.DeletedAt == null)
+            .Select(item => new { item.OrderId, item.AgreedBasePrice, item.Currency })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (order is null) return null;
+
+        var addOnsTotal = await dbContext.OrderAddOns.AsNoTracking()
+            .Where(item => item.OrderId == orderId)
+            .SumAsync(item => (decimal?)item.PriceAtPurchase, cancellationToken) ?? 0m;
+        var payments = await dbContext.OrderPayments.AsNoTracking()
+            .Where(item => item.OrderId == orderId)
+            .OrderBy(item => item.RecordedAt)
+            .ThenBy(item => item.OrderPaymentId)
+            .Select(item => new OrderPaymentData(
+                item.OrderPaymentId, item.OrderId, item.Amount, order.Currency,
+                item.Method, item.Reference, item.Note, item.RecordedByAdminUserId,
+                item.RecordedAt))
+            .ToListAsync(cancellationToken);
+
+        var total = order.AgreedBasePrice + addOnsTotal;
+        var paid = payments.Sum(item => item.Amount);
+        return new OrderBalanceData(order.OrderId, order.AgreedBasePrice, addOnsTotal,
+            total, paid, total - paid, order.Currency, payments);
+    }
+
+    public async Task<OrderPaymentData?> RecordPaymentAsync(
+        int orderId,
+        RecordOrderPaymentInput input,
+        string actorId,
+        DateTimeOffset recordedAt,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await dbContext.Orders.FirstOrDefaultAsync(
+            item => item.OrderId == orderId && item.DeletedAt == null, cancellationToken);
+        if (order is null) return null;
+
+        var payment = new OrderPayment
+        {
+            OrderId = orderId,
+            Amount = input.Amount,
+            Method = input.Method,
+            Reference = input.Reference,
+            Note = input.Note,
+            RecordedByAdminUserId = actorId,
+            RecordedAt = recordedAt
+        };
+        dbContext.OrderPayments.Add(payment);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return new OrderPaymentData(payment.OrderPaymentId, payment.OrderId,
+            payment.Amount, order.Currency, payment.Method, payment.Reference,
+            payment.Note, payment.RecordedByAdminUserId, payment.RecordedAt);
+    }
+
+    public async Task<OrderPaymentData?> CorrectPaymentAsync(
+        int paymentId,
+        CorrectOrderPaymentInput input,
+        string actorId,
+        DateTimeOffset correctedAt,
+        CancellationToken cancellationToken = default)
+    {
+        var payment = await dbContext.OrderPayments
+            .Include(item => item.Order)
+            .FirstOrDefaultAsync(item => item.OrderPaymentId == paymentId
+                && item.Order != null && item.Order.DeletedAt == null, cancellationToken);
+        if (payment?.Order is null) return null;
+
+        dbContext.OrderPaymentCorrections.Add(new OrderPaymentCorrection
+        {
+            OrderPaymentId = payment.OrderPaymentId,
+            PreviousAmount = payment.Amount,
+            PreviousMethod = payment.Method,
+            PreviousReference = payment.Reference,
+            PreviousNote = payment.Note,
+            NewAmount = input.Amount,
+            NewMethod = input.Method,
+            NewReference = input.Reference,
+            NewNote = input.Note,
+            Reason = input.Reason,
+            CorrectedByAdminUserId = actorId,
+            CorrectedAt = correctedAt
+        });
+        payment.Amount = input.Amount;
+        payment.Method = input.Method;
+        payment.Reference = input.Reference;
+        payment.Note = input.Note;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new OrderPaymentData(payment.OrderPaymentId, payment.OrderId,
+            payment.Amount, payment.Order.Currency, payment.Method, payment.Reference,
+            payment.Note, payment.RecordedByAdminUserId, payment.RecordedAt);
+    }
 }

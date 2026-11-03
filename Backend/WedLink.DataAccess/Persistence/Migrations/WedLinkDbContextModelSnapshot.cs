@@ -278,6 +278,133 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Orders.CustomerSubmissionMedia", b =>
+                {
+                    b.Property<int>("CustomerSubmissionMediaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerSubmissionMediaId"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeletedByAdminUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MediaKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("UploadedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("CustomerSubmissionMediaId");
+
+                    b.HasIndex("DeletedByAdminUserId");
+
+                    b.HasIndex("OrderId", "DeletedAt");
+
+                    b.ToTable("CustomerSubmissionMedia", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CustomerSubmissionMedia_Size_NonNegative", "[SizeBytes] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.CustomerWeddingSubmission", b =>
+                {
+                    b.Property<int>("CustomerWeddingSubmissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerWeddingSubmissionId"));
+
+                    b.Property<DateTimeOffset?>("AdminReviewedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("AdminReviewedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BrideName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CustomizationsJson")
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GroomName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("LocationUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("VenueAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("VenueName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("WeddingDateTimeLocal")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("CustomerWeddingSubmissionId");
+
+                    b.HasIndex("AdminReviewedByUserId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerWeddingSubmissions", (string)null);
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Orders.Order", b =>
                 {
                     b.Property<int>("OrderId")
@@ -371,6 +498,130 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderPayment", b =>
+                {
+                    b.Property<int>("OrderPaymentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderPaymentId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("RecordedByAdminUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("OrderPaymentId");
+
+                    b.HasIndex("RecordedByAdminUserId");
+
+                    b.HasIndex("OrderId", "RecordedAt");
+
+                    b.ToTable("OrderPayments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderPayments_Amount_Positive", "[Amount] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderPaymentCorrection", b =>
+                {
+                    b.Property<int>("OrderPaymentCorrectionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderPaymentCorrectionId"));
+
+                    b.Property<DateTimeOffset>("CorrectedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("CorrectedByAdminUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("NewAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("NewMethod")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("NewNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("NewReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("OrderPaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PreviousAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("PreviousMethod")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("PreviousNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PreviousReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("OrderPaymentCorrectionId");
+
+                    b.HasIndex("CorrectedByAdminUserId");
+
+                    b.HasIndex("OrderPaymentId", "CorrectedAt");
+
+                    b.ToTable("OrderPaymentCorrections", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderPaymentCorrections_NewAmount_Positive", "[NewAmount] > 0");
+
+                            t.HasCheckConstraint("CK_OrderPaymentCorrections_PreviousAmount_Positive", "[PreviousAmount] > 0");
+                        });
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Orders.OrderStatusHistory", b =>
                 {
                     b.Property<int>("OrderStatusHistoryId")
@@ -411,6 +662,46 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.HasIndex("OrderId", "ChangedAt");
 
                     b.ToTable("OrderStatusHistory");
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.PrivateLinkToken", b =>
+                {
+                    b.Property<int>("PrivateLinkTokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrivateLinkTokenId"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("PrivateLinkTokenId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId", "Purpose", "ExpiresAt");
+
+                    b.ToTable("PrivateLinkTokens", (string)null);
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.AddOn", b =>
@@ -705,6 +996,34 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Orders.CustomerSubmissionMedia", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedByAdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.CustomerWeddingSubmission", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("AdminReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                        .WithOne()
+                        .HasForeignKey("WedLink.DataAccess.Orders.CustomerWeddingSubmission", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Orders.Order", b =>
                 {
                     b.HasOne("WedLink.DataAccess.Customers.Customer", null)
@@ -737,6 +1056,38 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderPayment", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByAdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderPaymentCorrection", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectedByAdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WedLink.DataAccess.Orders.OrderPayment", null)
+                        .WithMany()
+                        .HasForeignKey("OrderPaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Orders.OrderStatusHistory", b =>
                 {
                     b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
@@ -752,6 +1103,15 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.PrivateLinkToken", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateAddOn", b =>

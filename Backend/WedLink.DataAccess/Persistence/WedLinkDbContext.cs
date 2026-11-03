@@ -4,6 +4,7 @@ using WedLink.DataAccess.Customers;
 using WedLink.DataAccess.Identity;
 using WedLink.DataAccess.Orders;
 using WedLink.DataAccess.Persistence.Configurations;
+using WedLink.DataAccess.Persistence.Configurations.Orders;
 using WedLink.DataAccess.Templates;
 
 namespace WedLink.DataAccess.Persistence;
@@ -14,6 +15,11 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderAddOn> OrderAddOns => Set<OrderAddOn>();
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
+    public DbSet<OrderPayment> OrderPayments => Set<OrderPayment>();
+    public DbSet<OrderPaymentCorrection> OrderPaymentCorrections => Set<OrderPaymentCorrection>();
+    public DbSet<PrivateLinkToken> PrivateLinkTokens => Set<PrivateLinkToken>();
+    public DbSet<CustomerWeddingSubmission> CustomerWeddingSubmissions => Set<CustomerWeddingSubmission>();
+    public DbSet<CustomerSubmissionMedia> CustomerSubmissionMedia => Set<CustomerSubmissionMedia>();
     public DbSet<Template> Templates => Set<Template>();
     public DbSet<TemplateVersion> TemplateVersions => Set<TemplateVersion>();
     public DbSet<Feature> Features => Set<Feature>();
@@ -34,6 +40,11 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
         modelBuilder.ApplyConfiguration(new OrderConfiguration());
         modelBuilder.ApplyConfiguration(new OrderAddOnConfiguration());
         modelBuilder.ApplyConfiguration(new OrderStatusHistoryConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderPaymentConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderPaymentCorrectionConfiguration());
+        modelBuilder.ApplyConfiguration(new PrivateLinkTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomerWeddingSubmissionConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomerSubmissionMediaConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateVersionConfiguration());
         modelBuilder.ApplyConfiguration(new FeatureConfiguration());

@@ -8,6 +8,7 @@
 # Node and frontend build output
 **/node_modules/
 **/dist/
+**/PrivateMedia/
 
 # Local secrets and machine-specific settings
 .env

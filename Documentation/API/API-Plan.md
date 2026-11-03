@@ -52,12 +52,18 @@ Customers have no login endpoints or customer dashboard.
 | PATCH | `/admin/orders/{orderId}/status` | Move an order through an allowed workflow status |
 | POST | `/admin/orders/{orderId}/submission-links` | Generate or rotate a private customer submission link |
 | DELETE | `/admin/orders/{orderId}/submission-links/{linkId}` | Revoke a private link |
+| GET | `/admin/orders/{orderId}/submission-links/current` | Return active link metadata without exposing its token |
+| GET | `/admin/orders/{orderId}/customer-submission` | Review submitted wedding details and private media metadata |
+| POST | `/admin/orders/{orderId}/customer-submission/review` | Record the reviewing admin and time |
+| GET | `/admin/orders/{orderId}/customer-submission/media/{mediaId}/content` | Stream a private media file to an authorized admin |
+| DELETE | `/admin/orders/{orderId}/customer-submission/media/{mediaId}` | Remove an unsuitable file and record who removed it |
 | GET | `/customer-submissions/current` | Read the order form associated with the private-link credential |
 | PUT | `/customer-submissions/current` | Submit/update wedding information and customization selections |
 | POST | `/customer-submissions/current/media` | Upload a file after server validation |
 | DELETE | `/customer-submissions/current/media/{mediaId}` | Remove an uploaded file before admin review, subject to workflow rules |
 
 A submission credential is scoped to one order, expires, and can be revoked. Raw token handling must follow the security conventions above.
+The submission link expires after 14 days. Rotating it revokes prior active submission links for that order. The one-time URL carries the token in its URL fragment so it is not sent in HTTP requests or referrer headers; the page removes the fragment after reading it and sends the token only in the Authorization header. Uploads accept JPEG/PNG/WebP (10 MB each), MP4 (100 MB), and MP3/M4A (20 MB), with a 500 MB active-media limit per order. Public submission reads/updates are rate-limited; uploads have a stricter rate limit.
 
 ### 4. Templates, versions, features, and add-ons
 

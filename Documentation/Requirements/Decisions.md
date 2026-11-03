@@ -28,17 +28,19 @@ This document records business decisions that affect implementation. Operational
 | BD-16 | Admin user foreign keys | Order status history references the ASP.NET Core Identity string user key. | Developer clarification, 2026-11-03 |
 | BD-17 | Admin access policy | Only accounts with the SuperAdmin role may sign in to and use the administration system. SuperAdmin alone manages admin accounts and assigns the built-in Admin and SuperAdmin roles. | Developer clarification, 2026-11-03 |
 | BD-18 | Order status workflow | New may move to Confirmed or Cancelled; Confirmed may move to InProgress or Cancelled; InProgress may move to Completed; Completed and Cancelled are terminal. | Developer clarification, 2026-11-03 |
+| BD-19 | Customer submission link | Submission links expire 14 days after creation. Rotating a link revokes all previous active submission links for the order. | Developer clarification, 2026-11-04 |
+| BD-20 | Customer upload limits | Allow JPEG, PNG, and WebP images up to 10 MB each; MP4 video up to 100 MB; MP3/M4A audio up to 20 MB; total active customer media is limited to 500 MB per order. | Developer clarification, 2026-11-04 |
+| BD-21 | File storage | Use local file storage for development behind a replaceable storage interface. Production provider selection is deferred. | Developer clarification, 2026-11-04 |
 
 ## Decisions to revisit when implementation reaches them
 
 These are configuration or technical choices rather than unresolved business rules. They will be proposed with a clear rationale before the dependent task where appropriate:
 
-- Initial upload limits, allowed media types, and total storage limits.
-- Private submission and preview link expiration defaults.
+- Private preview link expiration defaults.
 - Backup and recovery handling for deleted media.
 - Admin role and permission breakdown.
 - Exact approval and change-request record fields.
-- PNG generation and file storage providers.
+- Production file storage provider and PNG generation storage.
 - Egypt time-zone storage and daylight-saving implementation details.
 
 No implementation should silently change the confirmed business decisions above.
