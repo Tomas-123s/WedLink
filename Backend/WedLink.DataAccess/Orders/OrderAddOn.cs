@@ -1,10 +1,12 @@
-﻿namespace WedLink.DataAccess.Orders;
+namespace WedLink.DataAccess.Orders;
 
 public class OrderAddOn
 {
     public int OrderAddOnId { get; set; }
 
     public int OrderId { get; set; }
+
+    public Order? Order { get; set; }
 
     public int AddOnId { get; set; }
 

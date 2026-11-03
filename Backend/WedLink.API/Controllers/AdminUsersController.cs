@@ -27,13 +27,34 @@ public sealed class AdminUsersController(AdminAccountService adminAccountService
         try
         {
             var account = await adminAccountService.CreateAsync(
-                new CreateAdminAccountInput(request.Email, request.Password, request.Roles),
+                new CreateAdminAccountInput(request.DisplayName, request.Email, request.Password, request.Roles),
                 cancellationToken);
             return CreatedAtAction(nameof(GetAll), AdminAccountResponse.FromData(account));
         }
         catch (AdminAccountValidationException exception)
         {
             return BadRequest(new { message = exception.Message });
+        }
+    }
+
+    [HttpPut("me/display-name")]
+    public async Task<IActionResult> SetMyDisplayName(
+        AdminDisplayNameRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var account = await adminAccountService.SetDisplayNameAsync(userId, request.DisplayName, cancellationToken);
+            return Ok(AdminAccountResponse.FromData(account));
+        }
+        catch (AdminAccountValidationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+        catch (AdminAccountNotFoundException)
+        {
+            return NotFound();
         }
     }
 
@@ -83,3 +104,5 @@ public sealed class AdminUsersController(AdminAccountService adminAccountService
         }
     }
 }
+
+public sealed record AdminDisplayNameRequest(string DisplayName);

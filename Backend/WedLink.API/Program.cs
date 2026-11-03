@@ -5,10 +5,12 @@ using WedLink.DataAccess.Identity;
 using WedLink.DataAccess.AdminAccounts;
 using WedLink.DataAccess.Customers;
 using WedLink.DataAccess.Templates;
+using WedLink.DataAccess.Orders;
 using WedLink.DataAccess.Persistence;
 using WedLink.Business.AdminAccounts;
 using WedLink.Business.Customers;
 using WedLink.Business.Templates;
+using WedLink.Business.Orders;
 using WedLink.API.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +37,8 @@ builder.Services.AddScoped<TemplateService>();
 builder.Services.AddScoped<TemplateVersionService>();
 builder.Services.AddScoped<FeatureService>();
 builder.Services.AddScoped<AddOnService>();
+builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
+builder.Services.AddScoped<OrderService>();
 
 builder.Services
     .AddIdentityCore<AdminUser>(options =>

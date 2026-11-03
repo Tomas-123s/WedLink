@@ -64,12 +64,18 @@ public sealed class AdminAuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize(Roles = "SuperAdmin")]
-    public IActionResult GetCurrentAdmin()
+    public async Task<IActionResult> GetCurrentAdmin()
     {
+        var admin = await _userManager.GetUserAsync(User);
+        if (admin is null)
+        {
+            return Unauthorized();
+        }
+
         return Ok(new
         {
-            id = User.FindFirstValue(ClaimTypes.NameIdentifier),
-            email = User.FindFirstValue(ClaimTypes.Email)
+            id = admin.Id,
+            displayName = admin.DisplayName
         });
     }
 

@@ -2,6 +2,7 @@
 
 export interface AdminAccount {
   id: string
+  displayName: string
   email: string
   isActive: boolean
   roles: string[]
@@ -53,11 +54,16 @@ async function sendSecureRequest<T>(
 }
 
 export function createAdminAccount(input: {
+  displayName: string
   email: string
   password: string
   roles: string[]
 }): Promise<AdminAccount> {
   return sendSecureRequest('', 'POST', input)
+}
+
+export function setMyDisplayName(displayName: string): Promise<AdminAccount> {
+  return sendSecureRequest('/me/display-name', 'PUT', { displayName })
 }
 
 export function setAdminAccountActive(

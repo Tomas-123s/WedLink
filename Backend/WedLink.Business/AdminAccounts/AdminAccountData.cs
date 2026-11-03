@@ -15,11 +15,13 @@ public static class AdminRoles
 
 public sealed record AdminAccountData(
     string Id,
+    string DisplayName,
     string Email,
     bool IsActive,
     IReadOnlyList<string> Roles);
 
 public sealed record CreateAdminAccountInput(
+    string DisplayName,
     string Email,
     string Password,
     IReadOnlyList<string> Roles);
@@ -44,6 +46,7 @@ public interface IAdminAccountRepository
     Task<int> CountActiveSuperAdminsAsync(CancellationToken cancellationToken = default);
 
     Task<AdminAccountResult> CreateAsync(
+        string displayName,
         string email,
         string password,
         IReadOnlyList<string> roles,
@@ -57,5 +60,10 @@ public interface IAdminAccountRepository
     Task<AdminAccountResult?> SetRolesAsync(
         string userId,
         IReadOnlyList<string> roles,
+        CancellationToken cancellationToken = default);
+
+    Task<AdminAccountResult?> SetDisplayNameAsync(
+        string userId,
+        string displayName,
         CancellationToken cancellationToken = default);
 }

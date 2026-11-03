@@ -2,7 +2,7 @@ const authUrl = '/api/v1/admin/auth'
 
 export interface AdminSession {
   id: string
-  email: string
+  displayName: string
 }
 
 interface CsrfResponse {

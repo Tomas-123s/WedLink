@@ -1,10 +1,12 @@
-﻿namespace WedLink.DataAccess.Orders;
+namespace WedLink.DataAccess.Orders;
 
 public class OrderStatusHistory
 {
     public int OrderStatusHistoryId { get; set; }
 
     public int OrderId { get; set; }
+
+    public Order? Order { get; set; }
 
     public string? PreviousStatus { get; set; }
 

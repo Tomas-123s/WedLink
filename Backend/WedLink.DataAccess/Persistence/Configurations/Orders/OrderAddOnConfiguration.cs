@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WedLink.DataAccess.Orders;
 using WedLink.DataAccess.Templates;
@@ -25,7 +25,7 @@ public class OrderAddOnConfiguration : IEntityTypeConfiguration<OrderAddOn>
         builder.HasIndex(item => new { item.OrderId, item.AddOnId })
             .IsUnique();
 
-        builder.HasOne<Order>()
+        builder.HasOne(item => item.Order)
             .WithMany()
             .HasForeignKey(item => item.OrderId)
             .OnDelete(DeleteBehavior.Cascade);

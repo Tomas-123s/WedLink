@@ -8,6 +8,11 @@ public class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
 {
     public void Configure(EntityTypeBuilder<AdminUser> builder)
     {
+        builder.Property(user => user.DisplayName)
+            .HasMaxLength(100)
+            .HasDefaultValue(string.Empty)
+            .IsRequired();
+
         builder.Property(user => user.IsActive)
             .HasDefaultValue(true)
             .IsRequired();

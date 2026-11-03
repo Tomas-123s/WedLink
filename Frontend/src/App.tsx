@@ -1,4 +1,4 @@
-import { Link, Route, Routes, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAdmin } from './features/auth/RequireAdmin'
 import { AdminUsersPage } from './features/auth/AdminUsersPage'
@@ -16,23 +16,15 @@ function PageCard({ title, description }: { title: string; description: string }
   )
 }
 
-function HomePage() {
-  return (
-    <PageCard
-      title="أهلًا بك في WedLink"
-      description="المسارات الأساسية جاهزة. سنضيف صفحات الإدارة والدعوات خطوة بخطوة."
-    />
-  )
-}
-
 function AdminPage() {
   return (
     <section className="page-card">
       <p className="page-card__eyebrow">WedLink</p>
       <h1>لوحة الإدارة</h1>
-      <p>اختر قسمًا لإدارة بيانات العمل.</p>
+      <p>اختر مهمة للبدء في إدارة WedLink.</p>
       <Link className="dashboard-link" to="/admin/customers">إدارة العملاء</Link>
       <Link className="dashboard-link" to="/admin/templates">إدارة القوالب والإضافات</Link>
+      <Link className="dashboard-link" to="/admin/users">إدارة حسابات الإدارة</Link>
     </section>
   )
 }
@@ -79,7 +71,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <Link className="site-brand" to="/">
+        <Link className="site-brand" to="/admin">
           WedLink
         </Link>
         <nav aria-label="التنقل الرئيسي" className="site-nav">
@@ -90,7 +82,7 @@ function App() {
 
       <main className="page-content">
         <Routes>
-          <Route element={<HomePage />} path="/" />
+          <Route element={<Navigate replace to="/admin" />} path="/" />
           <Route element={<LoginPage />} path="/login" />
           <Route element={<RequireAdmin><AdminPage /></RequireAdmin>} path="/admin/*" />
           <Route element={<RequireAdmin><CustomersPage /></RequireAdmin>} path="/admin/customers" />

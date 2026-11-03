@@ -42,6 +42,7 @@ public sealed class IdentityAdminAccountRepository(
     }
 
     public async Task<AdminAccountResult> CreateAsync(
+        string displayName,
         string email,
         string password,
         IReadOnlyList<string> roles,
@@ -50,6 +51,7 @@ public sealed class IdentityAdminAccountRepository(
         await EnsureRolesExistAsync(roles);
         var user = new AdminUser
         {
+            DisplayName = displayName,
             UserName = email,
             Email = email,
             EmailConfirmed = true,
@@ -71,6 +73,24 @@ public sealed class IdentityAdminAccountRepository(
         }
 
         return Success(await ToDataAsync(user));
+    }
+
+    public async Task<AdminAccountResult?> SetDisplayNameAsync(
+        string userId,
+        string displayName,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.DisplayName = displayName;
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded
+            ? Success(await ToDataAsync(user))
+            : Failure(result.Errors);
     }
 
     public async Task<AdminAccountResult?> SetActiveAsync(
@@ -166,6 +186,7 @@ public sealed class IdentityAdminAccountRepository(
     {
         return new AdminAccountData(
             user.Id,
+            user.DisplayName,
             user.Email ?? user.UserName ?? string.Empty,
             user.IsActive,
             (await userManager.GetRolesAsync(user)).ToList());

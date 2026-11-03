@@ -31,6 +31,15 @@ if (string.IsNullOrWhiteSpace(email))
     return 1;
 }
 
+Console.Write("Admin display name: ");
+var displayName = Console.ReadLine()?.Trim();
+
+if (string.IsNullOrWhiteSpace(displayName) || displayName.Length > 100)
+{
+    Console.Error.WriteLine("Display name is required (up to 100 characters).");
+    return 1;
+}
+
 Console.Write("Password (8+ chars, upper/lowercase, digit, symbol): ");
 var password = ReadPassword();
 Console.WriteLine();
@@ -83,6 +92,7 @@ if (await userManager.FindByEmailAsync(email) is not null)
 
 var user = new AdminUser
 {
+    DisplayName = displayName,
     UserName = email,
     Email = email,
     EmailConfirmed = true,

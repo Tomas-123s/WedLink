@@ -74,9 +74,31 @@
   margin: 16px auto 0;
 }
 
-.admin-session-bar > span {
+.admin-display-name-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-display-name {
+  color: #6a5c62;
+  font-size: 15px;
+}
+
+.admin-display-name-form label {
   color: #6a5c62;
   font-size: 14px;
+}
+
+.admin-display-name-form input {
+  width: 180px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d9cfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #30252a;
 }
 
 .admin-session-bar .form-error {

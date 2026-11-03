@@ -21,6 +21,7 @@ public sealed class AdminUserManagementApiTests
             "/api/v1/admin/users",
             new
             {
+                displayName = "Admin Manager",
                 email = "manager@example.test",
                 password = "ManagerPass8!",
                 roles = new[] { "Admin" }
@@ -71,6 +72,7 @@ public sealed class AdminUserManagementApiTests
             "/api/v1/admin/users",
             new
             {
+                displayName = "Admin Only",
                 email = "admin-only@example.test",
                 password = "AdminPass8!",
                 roles = new[] { "Admin" }

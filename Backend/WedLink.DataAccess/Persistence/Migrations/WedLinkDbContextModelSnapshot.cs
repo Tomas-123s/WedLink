@@ -198,7 +198,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[DeletedAt] IS NULL");
 
-                    b.ToTable("Customers", (string)null);
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Identity.AdminUser", b =>
@@ -212,6 +212,13 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -403,7 +410,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("OrderId", "ChangedAt");
 
-                    b.ToTable("OrderStatusHistory", (string)null);
+                    b.ToTable("OrderStatusHistory");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.AddOn", b =>
@@ -441,7 +448,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasKey("AddOnId");
 
-                    b.ToTable("AddOns", null, t =>
+                    b.ToTable("AddOns", t =>
                         {
                             t.HasCheckConstraint("CK_AddOns_CurrentPrice", "[CurrentPrice] >= 0");
                         });
@@ -474,7 +481,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("Features", (string)null);
+                    b.ToTable("Features");
 
                     b.HasData(
                         new
@@ -559,7 +566,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Templates", (string)null);
+                    b.ToTable("Templates");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateAddOn", b =>
@@ -574,7 +581,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("AddOnId");
 
-                    b.ToTable("TemplateAddOns", (string)null);
+                    b.ToTable("TemplateAddOns");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateFeature", b =>
@@ -598,7 +605,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("FeatureId");
 
-                    b.ToTable("TemplateFeatures", null, t =>
+                    b.ToTable("TemplateFeatures", t =>
                         {
                             t.HasCheckConstraint("CK_TemplateFeatures_MaximumCount", "[MaximumCount] IS NULL OR [MaximumCount] >= 0");
 
@@ -644,7 +651,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.HasIndex("TemplateId", "VersionNumber")
                         .IsUnique();
 
-                    b.ToTable("TemplateVersions", (string)null);
+                    b.ToTable("TemplateVersions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -721,11 +728,13 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                    b.HasOne("WedLink.DataAccess.Orders.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Orders.OrderStatusHistory", b =>
@@ -736,11 +745,13 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                    b.HasOne("WedLink.DataAccess.Orders.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateAddOn", b =>

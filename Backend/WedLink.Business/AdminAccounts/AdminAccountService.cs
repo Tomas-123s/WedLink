@@ -12,6 +12,12 @@ public sealed class AdminAccountService(IAdminAccountRepository repository)
         CreateAdminAccountInput input,
         CancellationToken cancellationToken = default)
     {
+        var displayName = input.DisplayName.Trim();
+        if (displayName.Length == 0 || displayName.Length > 100)
+        {
+            throw new AdminAccountValidationException("Enter a display name up to 100 characters.");
+        }
+
         var email = input.Email.Trim();
         if (email.Length == 0 || email.Length > 256)
         {
@@ -20,7 +26,23 @@ public sealed class AdminAccountService(IAdminAccountRepository repository)
 
         var roles = CleanRoles(input.Roles);
         var result = await repository.CreateAsync(
-            email, input.Password, roles, cancellationToken);
+            displayName, email, input.Password, roles, cancellationToken);
+        return GetResult(result);
+    }
+
+    public async Task<AdminAccountData> SetDisplayNameAsync(
+        string userId,
+        string displayName,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedName = displayName.Trim();
+        if (normalizedName.Length == 0 || normalizedName.Length > 100)
+        {
+            throw new AdminAccountValidationException("Enter a display name up to 100 characters.");
+        }
+
+        var result = await repository.SetDisplayNameAsync(userId, normalizedName, cancellationToken)
+            ?? throw new AdminAccountNotFoundException();
         return GetResult(result);
     }
 

@@ -6,6 +6,7 @@ import type { AdminAccount } from './adminAccountsApi'
 const adminUsersKey = ['admin', 'users']
 
 export function AdminUsersPage() {
+  const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [createSuperAdmin, setCreateSuperAdmin] = useState(false)
@@ -16,11 +17,13 @@ export function AdminUsersPage() {
 
   const create = useMutation({
     mutationFn: () => createAdminAccount({
+      displayName: displayName.trim(),
       email: email.trim(),
       password,
       roles: createSuperAdmin ? ['Admin', 'SuperAdmin'] : ['Admin'],
     }),
     onSuccess: async () => {
+      setDisplayName('')
       setEmail('')
       setPassword('')
       setCreateSuperAdmin(false)
@@ -73,6 +76,15 @@ export function AdminUsersPage() {
         <section className="customer-panel">
           <h2>إضافة حساب</h2>
           <form className="customer-form" onSubmit={handleCreate}>
+            <label htmlFor="admin-account-display-name">اسم المسؤول</label>
+            <input
+              autoComplete="name"
+              id="admin-account-display-name"
+              maxLength={100}
+              onChange={(event) => setDisplayName(event.target.value)}
+              required
+              value={displayName}
+            />
             <label htmlFor="admin-account-email">البريد الإلكتروني</label>
             <input
               autoComplete="email"
@@ -123,7 +135,7 @@ export function AdminUsersPage() {
             <div className="table-scroll">
               <table className="customers-table">
                 <thead>
-                  <tr><th>البريد</th><th>الحالة</th><th>الأدوار</th><th>الإجراءات</th></tr>
+                  <tr><th>الاسم</th><th>الحالة</th><th>الأدوار</th><th>الإجراءات</th></tr>
                 </thead>
                 <tbody>
                   {accounts.data.map((account) => {
@@ -131,7 +143,7 @@ export function AdminUsersPage() {
                     const hasDraft = roleDrafts[account.id] !== undefined
                     return (
                       <tr key={account.id}>
-                        <td>{account.email}</td>
+                        <td>{account.displayName || '—'}</td>
                         <td>{account.isActive ? 'نشط' : 'متوقف'}</td>
                         <td>
                           <div className="admin-role-list">

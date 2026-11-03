@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WedLink.DataAccess.Identity;
 using WedLink.DataAccess.Orders;
@@ -29,7 +29,7 @@ public class OrderStatusHistoryConfiguration : IEntityTypeConfiguration<OrderSta
 
         builder.HasIndex(history => new { history.OrderId, history.ChangedAt });
 
-        builder.HasOne<Order>()
+        builder.HasOne(item => item.Order)
             .WithMany()
             .HasForeignKey(history => history.OrderId)
             .OnDelete(DeleteBehavior.Restrict);
