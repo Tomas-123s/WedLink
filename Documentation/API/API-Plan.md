@@ -23,6 +23,7 @@ This is a route and responsibility plan, not a final OpenAPI contract. Request/r
 
 | Method | Route | Purpose |
 |---|---|---|
+| GET | `/admin/auth/csrf` | Issue an antiforgery request token for the browser |
 | POST | `/admin/auth/login` | Sign an admin in |
 | POST | `/admin/auth/logout` | End the admin session |
 | GET | `/admin/auth/me` | Return current admin identity and permitted actions |
@@ -37,6 +38,7 @@ Identity and the final cookie/CSRF configuration are implemented with the authen
 | POST | `/admin/customers` | Create a customer |
 | GET | `/admin/customers/{customerId}` | View customer details and related order/payment summaries |
 | PUT | `/admin/customers/{customerId}` | Update customer contact details and notes |
+| DELETE | `/admin/customers/{customerId}` | Soft-delete a customer |
 
 Customers have no login endpoints or customer dashboard.
 
@@ -64,12 +66,14 @@ A submission credential is scoped to one order, expires, and can be revoked. Raw
 | GET | `/admin/templates` | List templates and active versions |
 | POST | `/admin/templates` | Register template metadata |
 | GET | `/admin/templates/{templateId}` | View template metadata and version history |
+| PUT | `/admin/templates/{templateId}` | Update template metadata |
 | PATCH | `/admin/templates/{templateId}/status` | Activate or deactivate template selection for new orders |
 | POST | `/admin/templates/{templateId}/versions` | Register a trusted, deployed template version |
-| GET | `/admin/template-versions/{versionId}` | View features, limits, and available add-ons |
-| PUT | `/admin/template-versions/{versionId}/features` | Configure supported features and limits |
-| PUT | `/admin/template-versions/{versionId}/addons` | Configure available add-ons |
-| POST | `/admin/template-versions/{versionId}/activate` | Activate a version for new orders |
+| GET | `/admin/template-versions/{templateVersionId}` | View features, limits, and available add-ons |
+| PUT | `/admin/template-versions/{templateVersionId}/features` | Configure supported features and limits |
+| PUT | `/admin/template-versions/{templateVersionId}/addons` | Configure available add-ons |
+| POST | `/admin/template-versions/{templateVersionId}/activate` | Activate a version for new orders |
+| GET | `/admin/features` | List supported features |
 | GET | `/admin/addons` | List add-ons |
 | POST | `/admin/addons` | Create an add-on |
 | PUT | `/admin/addons/{addonId}` | Update current add-on metadata and price |

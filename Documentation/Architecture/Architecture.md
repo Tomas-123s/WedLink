@@ -152,7 +152,7 @@ Keep API data fetching and form validation in small feature-level modules. Use o
 ## 6. Cross-cutting choices
 
 - API prefix: `/api/v1`; JSON request and response bodies.
-- Admin authentication: ASP.NET Core Identity. Proposed default is a secure, HTTP-only authentication cookie for the first-party dashboard; confirm deployment topology and cross-site needs before implementation. Do not store credentials or long-lived tokens in browser local storage.
+- Admin authentication: ASP.NET Core Identity with a secure, HTTP-only authentication cookie for the first-party dashboard. The selected topology serves the frontend and API on the same domain, with the API under `/api`; state-changing requests use ASP.NET Core antiforgery tokens. Do not store credentials or long-lived tokens in browser local storage.
 - Authorization: backend policies/roles; frontend visibility is convenience only.
 - Validation/errors: validate at API boundaries and repeat business-critical checks in Business services. Return consistent Problem Details responses without stack traces or secret values.
 - Arabic/RTL: UI labels and layouts are Arabic-first; API field names remain stable and language-neutral.
@@ -174,8 +174,7 @@ Online payment gateway, notifications, visitor analytics, customer accounts, gue
 
 These choices do not block this architecture plan and should be decided when their tasks begin:
 
-- Hosting topology and whether the frontend/API share an origin.
-- Final cookie/CSRF setup based on that topology.
+- The frontend/API deployment must preserve the selected same-origin layout, with the API under `/api`.
 - Concrete file/object storage provider and local development adapter.
 - Whether the background worker remains hosted inside the API process or becomes a separate deployment.
 - Exact token exchange and browser persistence for private customer links.

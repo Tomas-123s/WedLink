@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WedLink.Business", "WedLink
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WedLink.DataAccess", "WedLink.DataAccess\WedLink.DataAccess.csproj", "{C2199579-F887-4437-B359-05A15A7F0B7E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WedLink.AdminSetup", "WedLink.AdminSetup\WedLink.AdminSetup.csproj", "{C76B1376-261A-461D-B1AA-82D7AC3A45E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WedLink.Tests", "WedLink.Tests\WedLink.Tests.csproj", "{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +59,30 @@ Global
 		{C2199579-F887-4437-B359-05A15A7F0B7E}.Release|x64.Build.0 = Release|Any CPU
 		{C2199579-F887-4437-B359-05A15A7F0B7E}.Release|x86.ActiveCfg = Release|Any CPU
 		{C2199579-F887-4437-B359-05A15A7F0B7E}.Release|x86.Build.0 = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|x64.Build.0 = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Debug|x86.Build.0 = Debug|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|x64.ActiveCfg = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|x64.Build.0 = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|x86.ActiveCfg = Release|Any CPU
+		{C76B1376-261A-461D-B1AA-82D7AC3A45E4}.Release|x86.Build.0 = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|x64.Build.0 = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Debug|x86.Build.0 = Debug|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|x64.ActiveCfg = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|x64.Build.0 = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|x86.ActiveCfg = Release|Any CPU
+		{FFE694EF-6653-46E3-8D1D-69E4FB1379C9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

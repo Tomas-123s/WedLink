@@ -1,8 +1,8 @@
 ﻿# WedLink — Proposed Entity Relationship Diagram
 
-**Status:** Draft for developer review (Task P0-T2)
+**Status:** Reviewed conceptual model; Customer and template catalog tables are implemented. Remaining business tables are planned.
 **Basis:** BRD v1.0 and `Documentation/Requirements/Decisions.md`
-**Scope:** Conceptual model only. No database tables or application code have been created.
+**Scope:** Conceptual model for the WedLink business data.
 
 ## Design principles
 
@@ -45,7 +45,7 @@ erDiagram
     CUSTOMER {
         int CustomerId PK
         string Name
-        string Phone
+        string Phone "Unique among active customers; spaces removed before save"
         string Email "Optional"
         string Notes "Optional"
         datetime CreatedAt
@@ -117,7 +117,8 @@ erDiagram
         int TemplateVersionId PK, FK
         int FeatureId PK, FK
         bool IsEnabled
-        string LimitsJson
+        int MaximumCount "Optional"
+        int MaximumFileSizeMb "Optional"
     }
 
     ADDON {

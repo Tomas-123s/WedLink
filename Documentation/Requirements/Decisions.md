@@ -24,6 +24,7 @@ This document records business decisions that affect implementation. Operational
 | BD-12 | Order price | The agreed base price excludes add-ons. The total order amount is the base price plus the historical prices of selected add-ons. | Developer clarification, 2026-11-03 |
 | BD-13 | Preview review history | Keep an append-only history of preview approvals and change requests. | Developer clarification, 2026-11-03 |
 | BD-14 | Repeated RSVP | A guest can update the previous response from the same browser using a random edit token. The database stores only a hash of the token; guests do not need accounts. | Developer clarification, 2026-11-03 |
+| BD-15 | Customer phone | Customer phone numbers are unique after removing spaces; keep all other entered formatting unchanged. | Developer clarification, 2026-11-03 |
 
 ## Decisions to revisit when implementation reaches them
 

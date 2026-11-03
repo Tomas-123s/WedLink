@@ -31,6 +31,7 @@ dotnet run --project Backend\WedLink.API --launch-profile https
 
 Health endpoint: `https://localhost:7270/api/v1/health`
 Development OpenAPI document: `https://localhost:7270/openapi/v1.json`
+Admin authentication setup: see [database setup](Documentation/Database/LocalSetup.md) and [authentication API](Documentation/API/Admin-Authentication.md).
 
 ### Frontend
 
@@ -45,6 +46,7 @@ Open the local URL printed by Vite.
 ## Documentation
 
 - [Business decisions](Documentation/Requirements/Decisions.md)
+- [Development roadmap](Documentation/Planning/Development-Roadmap.md)
 - [Architecture](Documentation/Architecture/Architecture.md)
 - [API plan](Documentation/API/API-Plan.md)
 - [API error responses](Documentation/API/Error-Responses.md)
