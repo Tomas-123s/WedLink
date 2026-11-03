@@ -70,7 +70,7 @@ erDiagram
         int OrderId FK
         string PreviousStatus "Optional"
         string NewStatus
-        int ChangedByAdminUserId FK
+        string ChangedByAdminUserId FK "ASP.NET Identity string key"
         datetime ChangedAt
         string Note "Optional"
     }

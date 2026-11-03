@@ -1,4 +1,4 @@
-﻿.app-shell {
+.app-shell {
   min-height: 100vh;
 }
 
@@ -33,6 +33,55 @@
 
 .site-nav a:hover {
   color: #8b6173;
+}
+
+.admin-users-page {
+  width: 100%;
+}
+
+.admin-role-option,
+.admin-role-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-role-option input,
+.admin-role-list input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: #71495b;
+}
+
+.admin-role-list,
+.admin-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-account-actions .secondary-button {
+  padding: 6px 10px;
+}
+
+.admin-session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: min(100% - 40px, 1080px);
+  margin: 16px auto 0;
+}
+
+.admin-session-bar > span {
+  color: #6a5c62;
+  font-size: 14px;
+}
+
+.admin-session-bar .form-error {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .page-content {
@@ -614,4 +663,12 @@
   .addon-panel h2 {
     grid-column: auto;
   }
+}
+
+
+.admin-users-page .customer-form input[type="checkbox"],
+.admin-users-page .admin-role-list input[type="checkbox"] {
+  width: 16px;
+  min-height: 16px;
+  accent-color: #71495b;
 }

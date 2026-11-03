@@ -1,6 +1,7 @@
 import { Link, Route, Routes, useParams } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAdmin } from './features/auth/RequireAdmin'
+import { AdminUsersPage } from './features/auth/AdminUsersPage'
 import { CustomersPage } from './features/customers/CustomersPage'
 import { TemplatesPage } from './features/templates/TemplatesPage'
 import './App.css'
@@ -94,6 +95,7 @@ function App() {
           <Route element={<RequireAdmin><AdminPage /></RequireAdmin>} path="/admin/*" />
           <Route element={<RequireAdmin><CustomersPage /></RequireAdmin>} path="/admin/customers" />
           <Route element={<RequireAdmin><TemplatesPage /></RequireAdmin>} path="/admin/templates" />
+          <Route element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} path="/admin/users" />
           <Route element={<PublicInvitationPage />} path="/invite/:slug" />
           <Route element={<CustomerSubmissionPage />} path="/submit" />
           <Route element={<PrivatePreviewPage />} path="/preview" />

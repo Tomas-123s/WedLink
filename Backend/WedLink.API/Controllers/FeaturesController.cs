@@ -8,13 +8,13 @@ namespace WedLink.API.Controllers;
 [ApiController]
 [Authorize(Roles = "SuperAdmin")]
 [Route("api/v1/admin/features")]
-public sealed class FeaturesController(TemplateCatalogService catalogService) : ControllerBase
+public sealed class FeaturesController(FeatureService featureService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<FeatureResponse>>> GetAll(
         CancellationToken cancellationToken)
     {
-        var features = await catalogService.GetFeaturesAsync(cancellationToken);
+        var features = await featureService.GetFeaturesAsync(cancellationToken);
         return Ok(features.Select(FeatureResponse.FromData).ToList());
     }
 }

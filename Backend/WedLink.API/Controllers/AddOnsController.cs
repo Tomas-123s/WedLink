@@ -8,14 +8,14 @@ namespace WedLink.API.Controllers;
 [ApiController]
 [Authorize(Roles = "SuperAdmin")]
 [Route("api/v1/admin/addons")]
-public sealed class AddOnsController(TemplateCatalogService catalogService)
+public sealed class AddOnsController(AddOnService addOnService)
     : TemplateApiControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AddOnResponse>>> GetAll(
         CancellationToken cancellationToken)
     {
-        var addOns = await catalogService.GetAddOnsAsync(cancellationToken);
+        var addOns = await addOnService.GetAddOnsAsync(cancellationToken);
         return Ok(addOns.Select(AddOnResponse.FromData).ToList());
     }
 
@@ -26,7 +26,7 @@ public sealed class AddOnsController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var addOn = await catalogService.CreateAddOnAsync(
+            var addOn = await addOnService.CreateAddOnAsync(
                 request.ToInput(), cancellationToken);
             return CreatedAtAction(
                 nameof(GetAll),
@@ -42,7 +42,7 @@ public sealed class AddOnsController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var addOn = await catalogService.UpdateAddOnAsync(
+            var addOn = await addOnService.UpdateAddOnAsync(
                 addOnId, request.ToInput(), cancellationToken);
             return Ok(AddOnResponse.FromData(addOn));
         });

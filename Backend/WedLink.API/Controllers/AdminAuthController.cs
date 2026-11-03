@@ -12,13 +12,16 @@ namespace WedLink.API.Controllers;
 public sealed class AdminAuthController : ControllerBase
 {
     private readonly SignInManager<AdminUser> _signInManager;
+    private readonly UserManager<AdminUser> _userManager;
     private readonly IAntiforgery _antiforgery;
 
     public AdminAuthController(
         SignInManager<AdminUser> signInManager,
+        UserManager<AdminUser> userManager,
         IAntiforgery antiforgery)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
         _antiforgery = antiforgery;
     }
 
@@ -33,6 +36,12 @@ public sealed class AdminAuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
+        var admin = await _userManager.FindByEmailAsync(request.Email);
+        if (admin is null || !admin.IsActive)
+        {
+            return Unauthorized(new { message = "Invalid sign-in details." });
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
             request.Email,
             request.Password,
@@ -44,11 +53,17 @@ public sealed class AdminAuthController : ControllerBase
             return Unauthorized(new { message = "بيانات الدخول غير صحيحة." });
         }
 
+        if (!await _userManager.IsInRoleAsync(admin, "SuperAdmin"))
+        {
+            await _signInManager.SignOutAsync();
+            return Unauthorized(new { message = "Invalid sign-in details." });
+        }
+
         return NoContent();
     }
 
     [HttpGet("me")]
-    [Authorize]
+    [Authorize(Roles = "SuperAdmin")]
     public IActionResult GetCurrentAdmin()
     {
         return Ok(new

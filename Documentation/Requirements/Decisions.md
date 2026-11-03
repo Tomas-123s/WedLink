@@ -25,6 +25,8 @@ This document records business decisions that affect implementation. Operational
 | BD-13 | Preview review history | Keep an append-only history of preview approvals and change requests. | Developer clarification, 2026-11-03 |
 | BD-14 | Repeated RSVP | A guest can update the previous response from the same browser using a random edit token. The database stores only a hash of the token; guests do not need accounts. | Developer clarification, 2026-11-03 |
 | BD-15 | Customer phone | Customer phone numbers are unique after removing spaces; keep all other entered formatting unchanged. | Developer clarification, 2026-11-03 |
+| BD-16 | Admin user foreign keys | Order status history references the ASP.NET Core Identity string user key. | Developer clarification, 2026-11-03 |
+| BD-17 | Admin access policy | Only accounts with the SuperAdmin role may sign in to and use the administration system. SuperAdmin alone manages admin accounts and assigns the built-in Admin and SuperAdmin roles. | Developer clarification, 2026-11-03 |
 
 ## Decisions to revisit when implementation reaches them
 

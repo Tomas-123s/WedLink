@@ -8,7 +8,7 @@ namespace WedLink.API.Controllers;
 [ApiController]
 [Authorize(Roles = "SuperAdmin")]
 [Route("api/v1/admin/templates")]
-public sealed class TemplatesController(TemplateCatalogService catalogService)
+public sealed class TemplatesController(TemplateService templateService, TemplateVersionService versionService)
     : TemplateApiControllerBase
 {
     [HttpGet]
@@ -20,7 +20,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var result = await catalogService.SearchTemplatesAsync(
+            var result = await templateService.SearchTemplatesAsync(
                 search, page, pageSize, cancellationToken);
             return Ok(TemplatePageResponse.FromData(result));
         });
@@ -33,7 +33,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var template = await catalogService.CreateTemplateAsync(
+            var template = await templateService.CreateTemplateAsync(
                 request.ToInput(), cancellationToken);
             var response = TemplateResponse.FromData(template);
             return CreatedAtAction(
@@ -50,7 +50,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var template = await catalogService.GetTemplateAsync(
+            var template = await templateService.GetTemplateAsync(
                 templateId, cancellationToken);
             return Ok(TemplateResponse.FromData(template));
         });
@@ -64,7 +64,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var template = await catalogService.UpdateTemplateAsync(
+            var template = await templateService.UpdateTemplateAsync(
                 templateId, request.ToInput(), cancellationToken);
             return Ok(TemplateResponse.FromData(template));
         });
@@ -78,7 +78,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            await catalogService.SetTemplateActiveAsync(
+            await templateService.SetTemplateActiveAsync(
                 templateId, request.IsActive, cancellationToken);
             return NoContent();
         });
@@ -92,7 +92,7 @@ public sealed class TemplatesController(TemplateCatalogService catalogService)
     {
         return await RunTemplateAction(async () =>
         {
-            var version = await catalogService.CreateVersionAsync(
+            var version = await versionService.CreateVersionAsync(
                 templateId, request.ToInput(), cancellationToken);
             return CreatedAtAction(
                 nameof(TemplateVersionsController.GetById),

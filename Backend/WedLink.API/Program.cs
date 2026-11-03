@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using WedLink.DataAccess.Identity;
+using WedLink.DataAccess.AdminAccounts;
 using WedLink.DataAccess.Customers;
 using WedLink.DataAccess.Templates;
 using WedLink.DataAccess.Persistence;
+using WedLink.Business.AdminAccounts;
 using WedLink.Business.Customers;
 using WedLink.Business.Templates;
 using WedLink.API.Filters;
@@ -24,10 +26,15 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContext<WedLinkDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<IAdminAccountRepository, IdentityAdminAccountRepository>();
+builder.Services.AddScoped<AdminAccountService>();
 builder.Services.AddScoped<ICustomerRepository, EfCustomerRepository>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<ITemplateCatalogRepository, EfTemplateCatalogRepository>();
-builder.Services.AddScoped<TemplateCatalogService>();
+builder.Services.AddScoped<TemplateService>();
+builder.Services.AddScoped<TemplateVersionService>();
+builder.Services.AddScoped<FeatureService>();
+builder.Services.AddScoped<AddOnService>();
 
 builder.Services
     .AddIdentityCore<AdminUser>(options =>
@@ -50,6 +57,9 @@ builder.Services
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.Zero);
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

@@ -8,7 +8,7 @@ namespace WedLink.API.Controllers;
 [ApiController]
 [Authorize(Roles = "SuperAdmin")]
 [Route("api/v1/admin/template-versions")]
-public sealed class TemplateVersionsController(TemplateCatalogService catalogService)
+public sealed class TemplateVersionsController(TemplateVersionService versionService)
     : TemplateApiControllerBase
 {
     [HttpGet("{templateVersionId:int}")]
@@ -18,7 +18,7 @@ public sealed class TemplateVersionsController(TemplateCatalogService catalogSer
     {
         return await RunTemplateAction(async () =>
         {
-            var version = await catalogService.GetVersionAsync(
+            var version = await versionService.GetVersionAsync(
                 templateVersionId, cancellationToken);
             return Ok(TemplateVersionResponse.FromData(version));
         });
@@ -33,7 +33,7 @@ public sealed class TemplateVersionsController(TemplateCatalogService catalogSer
         return await RunTemplateAction(async () =>
         {
             var features = requests.Select(request => request.ToInput()).ToList();
-            await catalogService.SetVersionFeaturesAsync(
+            await versionService.SetVersionFeaturesAsync(
                 templateVersionId, features, cancellationToken);
             return NoContent();
         });
@@ -47,7 +47,7 @@ public sealed class TemplateVersionsController(TemplateCatalogService catalogSer
     {
         return await RunTemplateAction(async () =>
         {
-            await catalogService.SetVersionAddOnsAsync(
+            await versionService.SetVersionAddOnsAsync(
                 templateVersionId, request.AddOnIds, cancellationToken);
             return NoContent();
         });
@@ -60,7 +60,7 @@ public sealed class TemplateVersionsController(TemplateCatalogService catalogSer
     {
         return await RunTemplateAction(async () =>
         {
-            await catalogService.SetVersionActiveAsync(
+            await versionService.SetVersionActiveAsync(
                 templateVersionId, cancellationToken);
             return NoContent();
         });

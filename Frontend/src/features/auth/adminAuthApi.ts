@@ -14,7 +14,7 @@ export async function getCurrentAdmin(): Promise<AdminSession | null> {
     credentials: 'include',
   })
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     return null
   }
 
@@ -51,5 +51,27 @@ export async function loginAdmin(email: string, password: string): Promise<void>
 
   if (!loginResponse.ok) {
     throw new Error('تعذر تسجيل الدخول. حاول مرة أخرى.')
+  }
+}
+
+
+export async function logoutAdmin(): Promise<void> {
+  const csrfResponse = await fetch(`${authUrl}/csrf`, {
+    credentials: 'include',
+  })
+
+  if (!csrfResponse.ok) {
+    throw new Error('تعذر تجهيز طلب تسجيل الخروج. حاول مرة أخرى.')
+  }
+
+  const { token } = (await csrfResponse.json()) as CsrfResponse
+  const response = await fetch(`${authUrl}/logout`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'X-CSRF-TOKEN': token },
+  })
+
+  if (!response.ok && response.status !== 401) {
+    throw new Error('تعذر تسجيل الخروج. حاول مرة أخرى.')
   }
 }

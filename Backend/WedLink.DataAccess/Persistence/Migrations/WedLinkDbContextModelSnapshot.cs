@@ -198,7 +198,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[DeletedAt] IS NULL");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Identity.AdminUser", b =>
@@ -219,6 +219,11 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -266,6 +271,141 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Orders.Order", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
+
+                    b.Property<decimal>("AgreedBasePrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("EGP");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("SelectedTemplateVersionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("SelectedTemplateVersionId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Orders", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Orders_AgreedBasePrice_NonNegative", "[AgreedBasePrice] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderAddOn", b =>
+                {
+                    b.Property<int>("OrderAddOnId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderAddOnId"));
+
+                    b.Property<int>("AddOnId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NameAtPurchase")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PriceAtPurchase")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("OrderAddOnId");
+
+                    b.HasIndex("AddOnId");
+
+                    b.HasIndex("OrderId", "AddOnId")
+                        .IsUnique();
+
+                    b.ToTable("OrderAddOns", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderAddOns_PriceAtPurchase_NonNegative", "[PriceAtPurchase] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderStatusHistory", b =>
+                {
+                    b.Property<int>("OrderStatusHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderStatusHistoryId"));
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("ChangedByAdminUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("OrderStatusHistoryId");
+
+                    b.HasIndex("ChangedByAdminUserId");
+
+                    b.HasIndex("OrderId", "ChangedAt");
+
+                    b.ToTable("OrderStatusHistory", (string)null);
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Templates.AddOn", b =>
                 {
                     b.Property<int>("AddOnId")
@@ -301,7 +441,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasKey("AddOnId");
 
-                    b.ToTable("AddOns", t =>
+                    b.ToTable("AddOns", null, t =>
                         {
                             t.HasCheckConstraint("CK_AddOns_CurrentPrice", "[CurrentPrice] >= 0");
                         });
@@ -334,7 +474,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("Features");
+                    b.ToTable("Features", (string)null);
 
                     b.HasData(
                         new
@@ -419,7 +559,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Templates");
+                    b.ToTable("Templates", (string)null);
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateAddOn", b =>
@@ -434,7 +574,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("AddOnId");
 
-                    b.ToTable("TemplateAddOns");
+                    b.ToTable("TemplateAddOns", (string)null);
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateFeature", b =>
@@ -458,7 +598,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("FeatureId");
 
-                    b.ToTable("TemplateFeatures", t =>
+                    b.ToTable("TemplateFeatures", null, t =>
                         {
                             t.HasCheckConstraint("CK_TemplateFeatures_MaximumCount", "[MaximumCount] IS NULL OR [MaximumCount] >= 0");
 
@@ -504,7 +644,7 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.HasIndex("TemplateId", "VersionNumber")
                         .IsUnique();
 
-                    b.ToTable("TemplateVersions");
+                    b.ToTable("TemplateVersions", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -555,6 +695,51 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.Order", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WedLink.DataAccess.Templates.TemplateVersion", null)
+                        .WithMany()
+                        .HasForeignKey("SelectedTemplateVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderAddOn", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Templates.AddOn", null)
+                        .WithMany()
+                        .HasForeignKey("AddOnId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Orders.OrderStatusHistory", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByAdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WedLink.DataAccess.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
