@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAdmin } from './features/auth/RequireAdmin'
 import { AdminUsersPage } from './features/auth/AdminUsersPage'
@@ -9,6 +9,10 @@ import { CustomerSubmissionPage } from './features/customer-submission/CustomerS
 import { InvitationPreviewPage } from './features/invitations/InvitationPreviewPage'
 import { PublicInvitationPage } from './features/invitations/PublicInvitationPage'
 import { MusicLibraryPage } from './features/music/MusicLibraryPage'
+import { AdminDashboardPage } from './features/dashboard/AdminDashboardPage'
+import { AuditLogsPage } from './features/audit/AuditLogsPage'
+import { PublicWebsitePage } from './features/public-site/PublicWebsitePage'
+import { PublicDesignPreviewPage } from './features/public-site/PublicDesignPreviewPage'
 import './App.css'
 
 function PageCard({ title, description }: { title: string; description: string }) {
@@ -48,9 +52,10 @@ function NotFoundPage() {
 function App() {
   const location = useLocation()
   const isPublicInvitation = location.pathname.startsWith('/invite/')
+  const isPublicShowcase = location.pathname === '/' || location.pathname.startsWith('/designs/')
   return (
     <div className="app-shell">
-      {!isPublicInvitation && <header className="site-header">
+      {!isPublicInvitation && !isPublicShowcase && <header className="site-header">
         <Link className="site-brand" to="/admin">
           WedLink
         </Link>
@@ -60,10 +65,14 @@ function App() {
         </nav>
       </header>}
 
-      <main className="page-content">
+      <main className={`page-content${isPublicShowcase ? ' page-content--public' : ''}`}>
         <Routes>
-          <Route element={<Navigate replace to="/admin" />} path="/" />
+          <Route element={<PublicWebsitePage />} path="/" />
+          <Route element={<PublicDesignPreviewPage />} path="/designs/:templateId" />
           <Route element={<LoginPage />} path="/login" />
+          <Route element={<RequireAdmin><AdminPage /></RequireAdmin>} path="/admin" />
+          <Route element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} path="/admin/dashboard" />
+          <Route element={<RequireAdmin><AuditLogsPage /></RequireAdmin>} path="/admin/audit-logs" />
           <Route element={<RequireAdmin><AdminPage /></RequireAdmin>} path="/admin/*" />
           <Route element={<RequireAdmin><CustomersPage /></RequireAdmin>} path="/admin/customers" />
           <Route element={<RequireAdmin><OrdersPage /></RequireAdmin>} path="/admin/orders" />

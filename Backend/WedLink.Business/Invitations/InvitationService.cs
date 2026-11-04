@@ -4,7 +4,8 @@ using WedLink.Business.CustomerSubmissions;
 
 namespace WedLink.Business.Invitations;
 
-public sealed class InvitationService(IInvitationRepository repository, IPrivateLinkTokenGenerator tokenGenerator)
+public sealed class InvitationService(IInvitationRepository repository, IPrivateLinkTokenGenerator tokenGenerator,
+    TimeProvider timeProvider, InvitationLifecycleSettings lifecycleSettings)
 {
     private static readonly TimeSpan PreviewLifetime = TimeSpan.FromDays(14);
 
@@ -25,7 +26,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
             var zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId);
             if (zone.IsInvalidTime(input.WeddingDateTimeLocal.Value) || zone.IsAmbiguousTime(input.WeddingDateTimeLocal.Value))
                 throw new InvitationValidationException("موعد الزفاف غير صالح للمنطقة الزمنية المختارة.");
-            if (input.WeddingDateTimeLocal.Value <= TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).DateTime)
+            if (input.WeddingDateTimeLocal.Value <= TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), zone).DateTime)
                 throw new InvitationValidationException("موعد الزفاف يجب أن يكون في المستقبل.");
         }
         catch (TimeZoneNotFoundException) { throw new InvitationValidationException("المنطقة الزمنية غير مدعومة."); }
@@ -59,7 +60,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
             VenueName = Clean(input.VenueName), VenueAddress = Clean(input.VenueAddress),
             LocationUrl = location, CustomizationsJson = customizationJson,
             MediaIds = input.MediaIds.Distinct().ToArray()
-        }, DateTimeOffset.UtcNow, cancellationToken);
+        }, timeProvider.GetUtcNow(), cancellationToken);
         return saveResult.Failure switch
         {
             InvitationSaveFailure.None => saveResult.Invitation!,
@@ -74,14 +75,14 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
     public async Task<PreviewLinkData> CreatePreviewLinkAsync(int orderId, CancellationToken cancellationToken = default)
     {
         var (token, hash) = tokenGenerator.Generate();
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         var result = await repository.CreatePreviewLinkAsync(orderId, hash, now, now.Add(PreviewLifetime), cancellationToken)
             ?? throw new InvitationNotFoundException();
         return new PreviewLinkData(token, result.ExpiresAt);
     }
 
     public async Task<PreviewInvitationData> GetPreviewAsync(string token, CancellationToken cancellationToken = default) =>
-        await repository.GetPreviewAsync(HashToken(token), DateTimeOffset.UtcNow, cancellationToken) ?? throw new PreviewLinkException();
+        await repository.GetPreviewAsync(HashToken(token), timeProvider.GetUtcNow(), cancellationToken) ?? throw new PreviewLinkException();
 
     public async Task RecordReviewAsync(string token, string action, string? comment, CancellationToken cancellationToken = default)
     {
@@ -89,7 +90,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
         var cleanComment = Clean(comment);
         if (cleanComment?.Length > 2000) throw new InvitationValidationException("ملاحظة المراجعة تتجاوز 2000 حرف.");
         if (action == "ChangesRequested" && cleanComment is null) throw new InvitationValidationException("اكتب التعديلات المطلوبة.");
-        if (!await repository.AddReviewEventAsync(HashToken(token), DateTimeOffset.UtcNow, action, cleanComment, cancellationToken))
+        if (!await repository.AddReviewEventAsync(HashToken(token), timeProvider.GetUtcNow(), action, cleanComment, cancellationToken))
             throw new PreviewLinkException();
     }
 
@@ -98,34 +99,40 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
 
     public async Task PublishAsync(int invitationId, CancellationToken cancellationToken = default)
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         var invitation = await repository.GetForAdminByInvitationIdAsync(invitationId, cancellationToken)
             ?? throw new InvitationNotFoundException();
         if (invitation.WeddingDateTimeLocal is null) throw new InvitationValidationException("أدخل موعد الزفاف قبل النشر.");
-        TimeZoneInfo zone;
-        try { zone = TimeZoneInfo.FindSystemTimeZoneById(invitation.TimeZoneId); }
+        try { _ = TimeZoneInfo.FindSystemTimeZoneById(invitation.TimeZoneId); }
         catch (TimeZoneNotFoundException) { throw new InvitationValidationException("المنطقة الزمنية للدعوة غير مدعومة."); }
+        catch (InvalidTimeZoneException) { throw new InvitationValidationException("المنطقة الزمنية للدعوة غير صالحة."); }
         var wedding = invitation.WeddingDateTimeLocal.Value;
-        var expiresAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(wedding.AddMonths(2), zone), TimeSpan.Zero);
-        var mediaDeleteAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(wedding.AddMonths(3), zone), TimeSpan.Zero);
+        DateTimeOffset expiresAt;
+        DateTimeOffset mediaDeleteAt;
+        try
+        {
+            expiresAt = WeddingTimePolicy.AddCalendarMonths(wedding, invitation.TimeZoneId, lifecycleSettings.DefaultValidityMonths);
+            mediaDeleteAt = WeddingTimePolicy.AddCalendarMonths(wedding, invitation.TimeZoneId, 3);
+        }
+        catch (InvalidTimeZoneException) { throw new InvitationValidationException("تعذر حساب تواريخ الدعوة للمنطقة الزمنية المحددة."); }
         if (expiresAt <= now) throw new InvitationValidationException("انتهت مدة صلاحية الدعوة قبل نشرها.");
         var slug = Convert.ToHexString(RandomNumberGenerator.GetBytes(10)).ToLowerInvariant();
         ThrowLifecycleFailure(await repository.PublishAsync(invitationId, slug, now, expiresAt, mediaDeleteAt, cancellationToken));
     }
 
     public async Task PauseAsync(int invitationId, CancellationToken cancellationToken = default) =>
-        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Pause", DateTimeOffset.UtcNow, cancellationToken));
+        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Pause", timeProvider.GetUtcNow(), cancellationToken));
     public async Task ReactivateAsync(int invitationId, CancellationToken cancellationToken = default) =>
-        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Reactivate", DateTimeOffset.UtcNow, cancellationToken));
+        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Reactivate", timeProvider.GetUtcNow(), cancellationToken));
     public async Task ExtendAsync(int invitationId, CancellationToken cancellationToken = default) =>
-        ThrowLifecycleFailure(await repository.ExtendAsync(invitationId, DateTimeOffset.UtcNow, cancellationToken));
+        ThrowLifecycleFailure(await repository.ExtendAsync(invitationId, timeProvider.GetUtcNow(), cancellationToken));
 
     public async Task<PublicInvitationData> GetPublicAsync(string slug, CancellationToken cancellationToken = default) =>
-        await repository.GetPublicAsync(slug, DateTimeOffset.UtcNow, cancellationToken)
+        await repository.GetPublicAsync(slug, timeProvider.GetUtcNow(), cancellationToken)
             ?? throw new InvitationNotFoundException();
 
     public Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int mediaId, CancellationToken cancellationToken = default) =>
-        repository.GetPublicMediaAsync(slug, mediaId, DateTimeOffset.UtcNow, cancellationToken);
+        repository.GetPublicMediaAsync(slug, mediaId, timeProvider.GetUtcNow(), cancellationToken);
 
     public Task<InvitationCardData?> GetFinalPngAsync(int invitationId, CancellationToken cancellationToken = default) =>
         repository.GetFinalPngAsync(invitationId, cancellationToken);
@@ -133,7 +140,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
         repository.GetPublicFinalPngAsync(slug, cancellationToken);
 
     public async Task SetFinalPngAsync(int invitationId, string storageKey, CancellationToken cancellationToken = default) =>
-        ThrowLifecycleFailure(await repository.SetFinalPngAsync(invitationId, storageKey, DateTimeOffset.UtcNow, cancellationToken));
+        ThrowLifecycleFailure(await repository.SetFinalPngAsync(invitationId, storageKey, timeProvider.GetUtcNow(), cancellationToken));
 
     private static void ThrowLifecycleFailure(InvitationLifecycleFailure failure)
     {
@@ -152,7 +159,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
     public async Task<InvitationMediaContentData?> GetPreviewMediaAsync(string token, int mediaId, CancellationToken cancellationToken = default)
     {
         var hash = HashToken(token);
-        var now = DateTimeOffset.UtcNow;
+        var now = timeProvider.GetUtcNow();
         if (await repository.GetPreviewAsync(hash, now, cancellationToken) is null) throw new PreviewLinkException();
         return await repository.GetPreviewMediaAsync(hash, mediaId, now, cancellationToken);
     }

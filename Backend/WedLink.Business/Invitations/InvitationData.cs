@@ -54,6 +54,11 @@ public interface IInvitationRepository
     Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken cancellationToken = default);
 }
 
+public interface IInvitationExpirationRepository
+{
+    Task<int> ExpireDueInvitationsAsync(DateTimeOffset now, CancellationToken cancellationToken = default);
+}
+
 public enum InvitationLifecycleFailure { None, NotFound, NotApproved, InvalidState, Expired, SlugConflict, MissingWeddingDate }
 
 public sealed class InvitationNotFoundException() : Exception("الدعوة أو الطلب غير موجود.");

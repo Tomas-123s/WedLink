@@ -63,6 +63,10 @@ public sealed record TemplatePage(
     int PageSize,
     int TotalItems);
 
+public sealed record PublicTemplateData(int TemplateId, string Name, string? Description,
+    string? PreviewImageReference, string VersionNumber, IReadOnlyList<PublicTemplateFeatureData> Features);
+public sealed record PublicTemplateFeatureData(string Key, string Name, string? Description, int? MaximumCount, int? MaximumFileSizeMb);
+
 public sealed class TemplateValidationException(string message) : Exception(message)
 {
 }

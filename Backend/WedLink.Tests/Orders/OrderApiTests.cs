@@ -42,6 +42,23 @@ public sealed class OrderApiTests
         Assert.Single(created.AddOns);
         Assert.Equal("Premium Music", created.AddOns[0].NameAtPurchase);
         Assert.Equal(250m, created.AddOns[0].PriceAtPurchase);
+
+        var invalidPayment = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Post,
+            $"/api/v1/admin/orders/{created.OrderId}/payments",
+            new { amount = 0m, method = "Cash", reference = (string?)null, note = (string?)null });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPayment.StatusCode);
+        var paymentResponse = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Post,
+            $"/api/v1/admin/orders/{created.OrderId}/payments",
+            new { amount = 500.25m, method = "Cash", reference = "receipt-1", note = "deposit" });
+        Assert.Equal(HttpStatusCode.Created, paymentResponse.StatusCode);
+        var payment = await paymentResponse.Content.ReadFromJsonAsync<OrderPaymentResponse>(JsonOptions);
+        Assert.NotNull(payment);
+        Assert.Equal(500.25m, payment.Amount);
+        var balanceResponse = await client.GetAsync($"/api/v1/admin/orders/{created.OrderId}/balance");
+        var balance = await balanceResponse.Content.ReadFromJsonAsync<OrderBalanceResponse>(JsonOptions);
+        Assert.NotNull(balance);
+        Assert.Equal(1250.25m, balance.Balance);
+        Assert.Equal(500.25m, balance.PaidAmount);
         var initialHistory = Assert.Single(created.StatusHistory);
         Assert.Null(initialHistory.PreviousStatus);
         Assert.Equal("New", initialHistory.NewStatus);
@@ -256,4 +273,6 @@ public sealed class OrderApiTests
         List<OrderStatusHistoryResponse> StatusHistory);
     private sealed record OrderSummaryResponse(int OrderId);
     private sealed record OrderPageResponse(int TotalItems, List<OrderSummaryResponse> Items);
+    private sealed record OrderPaymentResponse(decimal Amount);
+    private sealed record OrderBalanceResponse(decimal PaidAmount, decimal Balance);
 }

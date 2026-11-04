@@ -8,6 +8,33 @@ namespace WedLink.DataAccess.Templates;
 public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
     : ITemplateCatalogRepository
 {
+    public async Task<IReadOnlyList<PublicTemplateData>> GetPublicTemplatesAsync(CancellationToken cancellationToken = default)
+    {
+        var activeTemplates = await dbContext.Templates.AsNoTracking()
+            .Where(t => t.IsActive && dbContext.TemplateVersions.Any(v => v.TemplateId == t.TemplateId && v.IsActive))
+            .OrderBy(t => t.Name).Select(t => new { t.TemplateId, t.Name, t.Description, t.PreviewImageReference })
+            .ToListAsync(cancellationToken);
+        var templateIds = activeTemplates.Select(t => t.TemplateId).ToArray();
+        var versions = await dbContext.TemplateVersions.AsNoTracking()
+            .Where(v => templateIds.Contains(v.TemplateId) && v.IsActive)
+            .OrderByDescending(v => v.CreatedAt).Select(v => new { v.TemplateId, v.TemplateVersionId, v.VersionNumber, v.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var selectedVersions = versions.GroupBy(v => v.TemplateId).Select(g => g.First()).ToArray();
+        var versionIds = selectedVersions.Select(v => v.TemplateVersionId).ToArray();
+        var features = await (from setting in dbContext.TemplateFeatures.AsNoTracking()
+                              join feature in dbContext.Features.AsNoTracking() on setting.FeatureId equals feature.FeatureId
+                              where versionIds.Contains(setting.TemplateVersionId) && setting.IsEnabled
+                              select new { setting.TemplateVersionId, feature.Key, feature.Name, feature.Description,
+                                  setting.MaximumCount, setting.MaximumFileSizeMb }).ToListAsync(cancellationToken);
+        return activeTemplates.Select(t =>
+        {
+            var version = selectedVersions.First(v => v.TemplateId == t.TemplateId);
+            return new PublicTemplateData(t.TemplateId, t.Name, t.Description, t.PreviewImageReference,
+                version.VersionNumber, features.Where(f => f.TemplateVersionId == version.TemplateVersionId)
+                    .Select(f => new PublicTemplateFeatureData(f.Key, f.Name, f.Description, f.MaximumCount, f.MaximumFileSizeMb)).ToArray());
+        }).ToArray();
+    }
+
     public async Task<TemplatePage> SearchTemplatesAsync(
         string? search,
         int page,

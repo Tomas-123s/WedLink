@@ -2,7 +2,9 @@
 
 WedLink is a custom digital wedding invitation management system for Egypt. The service is managed by an administrator: the admin creates an order, collects wedding details, prepares a private preview, and publishes the invitation after customer approval.
 
-**Project status:** Foundation and planning are in place; feature development is ongoing.
+**Project status:** Core admin, orders, guest invitations, lifecycle jobs, dashboard, and audit features are implemented. Automated tests run with the command below; release readiness still depends on the deployment environment and manual browser review.
+
+The public marketing website and design showcase are at `/`. See [public website requirements](Documentation/Requirements/Public-Website.md) for demo-data and contact configuration details.
 
 ## Technology
 
@@ -43,9 +45,42 @@ npm run dev
 
 Open the local URL printed by Vite.
 
+The public homepage and design gallery are served at `/`; the protected admin interface remains at `/admin`. To configure the WhatsApp contact, copy `Frontend/.env.example` to `Frontend/.env.local` and replace the example phone with the business number in international digits (without `+` or spaces). Vite picks up changes after restarting the frontend server. Keep `.env.local` out of Git.
+
+## Verify changes
+
+From the repository root, restore and build the backend, then run the automated suite:
+
+```powershell
+dotnet restore Backend\WedLink.sln
+dotnet build Backend\WedLink.sln --no-restore
+dotnet test Backend\WedLink.sln --no-build
+```
+
+Build the frontend separately:
+
+```powershell
+cd Frontend
+npm ci
+npm run build
+```
+
+Test API integration cases use an isolated EF Core in-memory database. They do not exercise SQL Server query behavior or a deployed browser session.
+
+## Before deployment
+
+- Configure the SQL Server connection string and storage path outside source control.
+- Keep API keys, passwords, and signing credentials in .NET User Secrets locally or the deployment secret store; do not paste them into source, logs, screenshots, or issue reports.
+- Apply EF migrations using the deployment process and create the first SuperAdmin through `WedLink.AdminSetup`.
+- Serve the API and frontend over HTTPS; the admin cookies require secure transport.
+- Configure persistent private media storage and a scheduled database backup with a tested restore procedure.
+- Review the [local setup and backup notes](Documentation/Database/LocalSetup.md) and environment limitations before production use.
+
 ## Documentation
 
 - [Business decisions](Documentation/Requirements/Decisions.md)
+- [Future invitation experience requirements](Documentation/Requirements/Future-Invitation-Experience.md)
+- [Public website requirements](Documentation/Requirements/Public-Website.md)
 - [Development roadmap](Documentation/Planning/Development-Roadmap.md)
 - [Architecture](Documentation/Architecture/Architecture.md)
 - [API plan](Documentation/API/API-Plan.md)

@@ -137,7 +137,7 @@ Private tokens are secrets. They must be random, stored as hashes, expiring and 
 
 ### Scheduled expiration and cleanup
 
-A hosted background worker runs idempotent jobs for invitation expiration and temporary-media deletion. Jobs use the same Business rules and storage interface as normal requests. The permanent PNG card and historical order/payment records are excluded from media cleanup.
+The hosted background worker checks invitation expiration every five minutes by default and marks due Published/Paused invitations Expired through an idempotent database update. A separate worker checks media retention every 60 minutes by default, deletes due temporary objects, and marks database metadata deleted. Failed objects remain eligible for retry. The validity period defaults to two months after the wedding and can be changed for new publications through `InvitationLifecycle:DefaultValidityMonths`; existing invitations keep their stored expiry. Temporary media is permanently deleted after three months; the permanent PNG card, licensed music library, and historical order/payment records are excluded.
 
 ## 5. Frontend organization
 
@@ -178,3 +178,11 @@ These choices do not block this architecture plan and should be decided when the
 - Concrete file/object storage provider and local development adapter.
 - Whether the background worker remains hosted inside the API process or becomes a separate deployment.
 - Exact token exchange and browser persistence for private customer links.
+
+## Dashboard and audit log (P11)
+
+The SuperAdmin dashboard queries order, invitation, and payment tables for Cairo date ranges. Audit write events are captured by an MVC action filter and stored in append-only `AuditLogs`; the searchable endpoint returns metadata only and is restricted to SuperAdmin.
+
+## Public website and design showcase (P29)
+
+The React app serves the marketing home and catalogue at `/` and demo design previews at `/designs/{templateId}`. `GET /api/v1/public/templates` queries only active templates with active versions and maps them to a separate public contract, excluding package keys and customer/order information. Admin routes stay under `/admin` with existing authentication and role authorization. WhatsApp contact configuration is provided by frontend environment variables.

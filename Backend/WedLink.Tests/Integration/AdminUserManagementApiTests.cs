@@ -106,6 +106,7 @@ public sealed class AdminUserManagementApiTests
             "/api/v1/admin/users",
             new
             {
+                displayName = "Second Super Admin",
                 email = "second-super@example.test",
                 password = "SecondPass8!",
                 roles = new[] { "SuperAdmin" }

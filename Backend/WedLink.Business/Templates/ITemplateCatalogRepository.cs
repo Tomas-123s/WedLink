@@ -2,6 +2,8 @@ namespace WedLink.Business.Templates;
 
 public interface ITemplateCatalogRepository
 {
+    Task<IReadOnlyList<PublicTemplateData>> GetPublicTemplatesAsync(CancellationToken cancellationToken = default);
+
     Task<TemplatePage> SearchTemplatesAsync(
         string? search,
         int page,

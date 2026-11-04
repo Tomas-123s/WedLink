@@ -53,6 +53,7 @@ public interface ISubmissionFileStorage
 {
     Task<string> SaveAsync(Stream content, CancellationToken cancellationToken = default);
     Task<Stream?> OpenReadAsync(string key, CancellationToken cancellationToken = default);
+    /// <summary>Deletes a stored object; deleting an already missing key must succeed so cleanup can retry safely.</summary>
     Task DeleteAsync(string key, CancellationToken cancellationToken = default);
 }
 

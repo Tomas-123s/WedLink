@@ -109,6 +109,12 @@ public sealed class AdminCatalogApiTests
                 }
             });
         Assert.Equal(HttpStatusCode.NoContent, featureResponse.StatusCode);
+        var secondFeatureResponse = await AdminApiTestClient.SendSecureJsonAsync(
+            client,
+            HttpMethod.Put,
+            $"/api/v1/admin/template-versions/{secondVersion.TemplateVersionId}/features",
+            new[] { new { featureId = features[0].FeatureId, isEnabled = true, maximumCount = 5, maximumFileSizeMb = 4 } });
+        Assert.Equal(HttpStatusCode.NoContent, secondFeatureResponse.StatusCode);
 
         var addOnResponse = await AdminApiTestClient.SendSecureJsonAsync(
             client,
@@ -150,6 +156,23 @@ public sealed class AdminCatalogApiTests
         var secondDetails = await secondDetailsResponse.Content.ReadFromJsonAsync<TemplateVersionResponse>(JsonOptions);
         Assert.NotNull(secondDetails);
         Assert.True(secondDetails.IsActive);
+
+        var anonymous = factory.CreateClient();
+        var publicResponse = await anonymous.GetAsync("/api/v1/public/templates");
+        Assert.Equal(HttpStatusCode.OK, publicResponse.StatusCode);
+        var publicJson = await publicResponse.Content.ReadAsStringAsync();
+        Assert.Contains("Classic", publicJson);
+        Assert.Contains("2.0", publicJson);
+        Assert.Contains(features[0].Key, publicJson);
+        Assert.DoesNotContain("packageKey", publicJson);
+        Assert.DoesNotContain("classic-v1", publicJson);
+        Assert.DoesNotContain("classic-v2", publicJson);
+
+        var deactivate = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Patch,
+            $"/api/v1/admin/templates/{template.TemplateId}/status", new { isActive = false });
+        Assert.Equal(HttpStatusCode.NoContent, deactivate.StatusCode);
+        var hiddenResponse = await anonymous.GetAsync("/api/v1/public/templates");
+        Assert.Equal("[]", await hiddenResponse.Content.ReadAsStringAsync());
     }
 
     private sealed record CustomerResponse(int CustomerId, string Phone);
@@ -161,6 +184,6 @@ public sealed class AdminCatalogApiTests
         List<TemplateFeatureResponse> Features,
         List<AddOnResponse> AddOns);
     private sealed record TemplateFeatureResponse(int FeatureId);
-    private sealed record FeatureResponse(int FeatureId);
+    private sealed record FeatureResponse(int FeatureId, string Key);
     private sealed record AddOnResponse(int AddOnId);
 }

@@ -10,6 +10,7 @@ using WedLink.DataAccess.Persistence.Configurations.Invitations;
 using WedLink.DataAccess.Templates;
 using WedLink.DataAccess.Guests;
 using WedLink.DataAccess.Persistence.Configurations.Guests;
+using WedLink.DataAccess.Audit;
 
 namespace WedLink.DataAccess.Persistence;
 
@@ -37,6 +38,7 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
     public DbSet<TemplateFeature> TemplateFeatures => Set<TemplateFeature>();
     public DbSet<AddOn> AddOns => Set<AddOn>();
     public DbSet<TemplateAddOn> TemplateAddOns => Set<TemplateAddOn>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     public WedLinkDbContext(DbContextOptions<WedLinkDbContext> options)
         : base(options)
@@ -69,5 +71,6 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
         modelBuilder.ApplyConfiguration(new TemplateFeatureConfiguration());
         modelBuilder.ApplyConfiguration(new AddOnConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateAddOnConfiguration());
+        modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
     }
 }

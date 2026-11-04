@@ -33,15 +33,23 @@ This document records business decisions that affect implementation. Operational
 | BD-21 | File storage | Use local file storage for development behind a replaceable storage interface. Production provider selection is deferred. | Developer clarification, 2026-11-04 |
 | BD-22 | Invitation preview link | Preview links expire 14 days after creation. Creating a replacement revokes all previous active preview links for that order. | Developer clarification, 2026-11-04 |
 | BD-23 | Invitation extensions | An admin may extend a published or paused, unexpired invitation by one calendar month at a time. An expired invitation cannot be extended or reactivated. | Developer clarification, 2026-11-04 |
+| BD-24 | Invitation lifecycle timing | Configure default validity as whole months (`InvitationLifecycle:DefaultValidityMonths`, default 2; applies only to new publications). A hosted job checks every 5 minutes by default and idempotently marks due Published/Paused invitations Expired. Store and compare UTC instants derived from the invitation's local wedding time zone; move skipped daylight-saving boundary times forward to the first valid minute and resolve repeated times to the earlier UTC instant. | Implementation default selected for P10-T1; configurable operational setting |
+| BD-25 | Expired media recovery | At three months after the wedding, delete temporary media objects permanently and mark their database metadata deleted; do not keep an application-level recovery copy. Missing objects count as already deleted so retries are safe. Production backup policy remains a deployment decision. | Implementation default selected for P10-T2; follows BD-03 |
 
 ## Decisions to revisit when implementation reaches them
 
 These are configuration or technical choices rather than unresolved business rules. They will be proposed with a clear rationale before the dependent task where appropriate:
 
-- Backup and recovery handling for deleted media.
+- Production backup and recovery provider for media outside the application's retention window.
 - Admin role and permission breakdown.
 - Exact approval and change-request record fields.
 - Production file storage provider and PNG generation storage.
 - Egypt time-zone storage and daylight-saving implementation details.
 
 No implementation should silently change the confirmed business decisions above.
+
+## P11 reporting and audit behavior
+
+- Dashboard dates are inclusive Cairo calendar dates; the default range is the current calendar month. Supplying only one boundary is invalid; ranges are limited to ten years.
+- Period counts use the selected interval. Active invitations are a current snapshot. Collected payments use their recorded date; outstanding balances are current balances for orders created in the interval, grouped by currency.
+- Audit records are created for authenticated admin write actions and retain actor, controller/action, entity type and route ID when present, UTC time, HTTP status, and outcome. Request bodies, query values, passwords, tokens, and other secrets are never recorded. Audit search is SuperAdmin-only.

@@ -2,6 +2,9 @@ namespace WedLink.Business.Templates;
 
 public sealed class TemplateService(ITemplateCatalogRepository repository)
 {
+    public Task<IReadOnlyList<PublicTemplateData>> GetPublicTemplatesAsync(CancellationToken cancellationToken = default) =>
+        repository.GetPublicTemplatesAsync(cancellationToken);
+
     public Task<TemplatePage> SearchTemplatesAsync(
         string? search,
         int page,

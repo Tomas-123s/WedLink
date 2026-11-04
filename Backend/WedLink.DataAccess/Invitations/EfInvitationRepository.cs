@@ -6,7 +6,7 @@ using WedLink.DataAccess.Persistence;
 
 namespace WedLink.DataAccess.Invitations;
 
-public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRepository
+public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider timeProvider) : IInvitationRepository, IInvitationExpirationRepository
 {
     private const string PreviewPurpose = "InvitationPreview";
 
@@ -86,7 +86,14 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
             await db.SaveChangesAsync(cancellationToken);
             return InvitationLifecycleFailure.Expired;
         }
-        invitation.ExpiresAt = invitation.ExpiresAt.Value.AddMonths(1);
+        try
+        {
+            var zone = TimeZoneInfo.FindSystemTimeZoneById(invitation.TimeZoneId);
+            var localExpiry = TimeZoneInfo.ConvertTime(invitation.ExpiresAt.Value, zone).DateTime;
+            invitation.ExpiresAt = WeddingTimePolicy.AddCalendarMonths(localExpiry, invitation.TimeZoneId, 1);
+        }
+        catch (TimeZoneNotFoundException) { return InvitationLifecycleFailure.InvalidState; }
+        catch (InvalidTimeZoneException) { return InvitationLifecycleFailure.InvalidState; }
         invitation.UpdatedAt = now;
         await db.SaveChangesAsync(cancellationToken);
         return InvitationLifecycleFailure.None;
@@ -152,6 +159,14 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
             && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null))
             .Select(item => new InvitationCardData(item.FinalPngStorageKey!, "image/png")).FirstOrDefaultAsync(cancellationToken);
 
+    public Task<int> ExpireDueInvitationsAsync(DateTimeOffset now, CancellationToken cancellationToken = default) =>
+        db.Invitations.Where(item => item.ExpiresAt != null && item.ExpiresAt <= now
+            && (item.Status == "Published" || item.Status == "Paused"))
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(item => item.Status, "Expired")
+                .SetProperty(item => item.PausedAt, (DateTimeOffset?)null)
+                .SetProperty(item => item.UpdatedAt, now), cancellationToken);
+
     public async Task<InvitationData?> GetForAdminAsync(int orderId, CancellationToken cancellationToken = default)
     {
         var row = await (from order in db.Orders.AsNoTracking()
@@ -196,7 +211,7 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
             ? (row.submission?.BrideName ?? "", row.submission?.GroomName ?? "")
             : ParseCoupleNames(row.invitation.CoupleNames);
         var currentStatus = row.invitation?.Status ?? "Draft";
-        if (row.invitation?.ExpiresAt is DateTimeOffset expiry && expiry <= DateTimeOffset.UtcNow
+        if (row.invitation?.ExpiresAt is DateTimeOffset expiry && expiry <= timeProvider.GetUtcNow()
             && currentStatus is ("Published" or "Paused")) currentStatus = "Expired";
         return new InvitationData(orderId, row.invitation?.InvitationId, row.SelectedTemplateVersionId, row.invitation?.MusicTrackId, row.Name,
             row.VersionNumber, brideName, groomName,

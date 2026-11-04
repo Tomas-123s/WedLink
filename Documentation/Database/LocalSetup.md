@@ -53,6 +53,8 @@ dotnet run --project Backend\WedLink.API --launch-profile https
 فحص الصحة: `https://localhost:7270/api/v1/health`
 OpenAPI أثناء التطوير: `https://localhost:7270/openapi/v1.json`
 
+Invitation validity defaults to two calendar months after the wedding. Set `InvitationLifecycle:DefaultValidityMonths` (1–24) to change the period for new publications; existing invitations keep their stored expiry. The expiration worker checks every five minutes by default. Configure `InvitationLifecycle:ExpirationIntervalMinutes` (1–1440) to change that interval. Temporary media is deleted three months after the wedding; its worker checks every 60 minutes by default, configurable with `InvitationLifecycle:MediaCleanupIntervalMinutes` (1–1440). The database retains deleted-media metadata; the application does not keep a recovery copy.
+
 تُحفظ ملفات التقديم الخاصة محليًا خارج `wwwroot` في `Backend/WedLink.API/PrivateMedia` افتراضيًا، ولا يمكن فتحها كرابط عام. يمكن تغيير المسار بإعداد `Storage:CustomerSubmissionPath`. قاعدة البيانات تحفظ البيانات الوصفية ومفتاح التخزين فقط. مزود الإنتاج لم يُحدد بعد.
 
 ## تشغيل الاختبارات
@@ -60,3 +62,20 @@ OpenAPI أثناء التطوير: `https://localhost:7270/openapi/v1.json`
 ```powershell
 dotnet test Backend\WedLink.Tests\WedLink.Tests.csproj
 ```
+
+## النسخ الاحتياطي والاستعادة
+
+للتطوير المحلي، أوقف الكتابة إلى النظام ثم أنشئ نسخة من قاعدة البيانات باستخدام SQL Server Management Studio أو `BACKUP DATABASE`. احتفظ بالنسخة خارج مجلد المستودع، واحمها بصلاحيات وصول مناسبة. مثال T-SQL (استبدل المسار بمجلد نسخ احتياطي مخصص على خادم SQL Server):
+
+```sql
+BACKUP DATABASE [WedLinkDb]
+TO DISK = N'<protected-backup-path>\WedLinkDb.bak'
+WITH COPY_ONLY, INIT, CHECKSUM;
+RESTORE VERIFYONLY FROM DISK = N'<protected-backup-path>\WedLinkDb.bak' WITH CHECKSUM;
+```
+
+لاستعادة نسخة محلية، استخدم SSMS أو `RESTORE DATABASE` إلى قاعدة اختبار منفصلة أولًا، ثم تحقق من الجداول والترحيلات والملفات الخاصة المرتبطة بها. ملفات الوسائط الخاصة تُخزّن خارج قاعدة البيانات؛ انسخ مجلد التخزين الخاص بصورة متسقة مع النسخة، ولا تضع النسخ أو الوسائط أو بيانات الاعتماد في Git. لم تُعتمد بعد سياسة احتفاظ إنتاجية أو مزود تخزين خارجي.
+
+## ملاحظات P12
+
+تغطي اختبارات التكامل API باستخدام قاعدة EF Core InMemory معزولة لكل مصنع اختبار. يلزم تشغيل تحقق يدوي على SQL Server وواجهات المتصفح قبل أي نشر؛ نتائج InMemory لا تثبت سلوك ترجمات SQL أو الأداء الإنتاجي.

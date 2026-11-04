@@ -158,13 +158,21 @@ Financial values are decimal amounts. The total is the agreed base price plus ad
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/admin/dashboard/summary` | Return invitation/order summary counts and available financial summaries |
+| GET | `/admin/dashboard/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Return invitation/order summary counts and financial summaries for inclusive Cairo dates; defaults to the current month |
 | GET | `/admin/users` | List admin users (permission restricted) |
 | POST | `/admin/users` | Create an admin account (Super Admin only) |
 | PUT | `/admin/users/{userId}/roles` | Assign roles/permissions (Super Admin only) |
-| GET | `/admin/audit-logs` | Search audit history (Super Admin only) |
+| GET | `/admin/audit-logs` | Search audit history (Super Admin only); filters: userId, action, entityType, entityId, outcome, from, to, page, pageSize |
 
 No visitor analytics endpoint is planned for the MVP.
+
+### 11. Public marketing and design showcase
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/public/templates` | List active templates that have an active version, exposing marketing copy and enabled feature descriptions only; never return package keys or order/customer information |
+
+Public design previews use fixed demonstration couple/date/location data. The WhatsApp phone and prefilled message are configured by frontend environment variables; the phone number is not embedded in source control.
 
 ## Route shape and security notes
 

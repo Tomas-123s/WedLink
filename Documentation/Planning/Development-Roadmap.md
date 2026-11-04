@@ -117,23 +117,23 @@
 
 | المهمة | الهدف والمخرجات والملفات المتوقعة | الاعتماديات | القبول والاختبار المطلوب | التعقيد | الحالة |
 |---|---|---|---|---|---|
-| P10-T1 — انتهاء صلاحية الدعوات | خدمة وقت موحدة وجدولة idempotent تنهي الإتاحة العامة بعد شهرين من موعد الزفاف افتراضيًا مع تمديد مسموح قبل الانتهاء. | P8-T1، قرار مدة الانتهاء | التطبيق ثابت حول المنطقة الزمنية `Africa/Cairo`، وإعادة تشغيل المهمة لا تكرر أثرًا خاطئًا. اختبارات حدود الوقت وإعادة المحاولة. | كبير | مخططة؛ تُحسم آلية تغيير المدة الافتراضية |
-| P10-T2 — حذف الوسائط المؤقتة | تنظيف آلي للوسائط المؤقتة بعد 3 أشهر من موعد الزفاف، مع استثناء PNG وسجلات الأعمال. | P6-T2، P7-T1، P8-T3 | لا حذف للبطاقة النهائية أو مستندات الأعمال؛ التنظيف آمن عند إعادة المحاولة ومسجل. اختبارات سياسة وملفات تجريبية. | متوسط | مخططة؛ تُحسم سياسة الاستعادة والنسخ الاحتياطي |
+| P10-T1 — انتهاء صلاحية الدعوات | خدمة وقت موحدة وجدولة idempotent تنهي الإتاحة العامة بعد مدة قابلة للإعداد (شهران افتراضيًا) من موعد الزفاف، مع تمديد مسموح قبل الانتهاء. | P8-T1، قرار مدة الانتهاء | التطبيق ثابت حول المنطقة الزمنية `Africa/Cairo`، وإعادة تشغيل المهمة لا تكرر أثرًا خاطئًا. اختبارات حدود الوقت وإعادة المحاولة. | كبير | التنفيذ والبناء مكتملان؛ الاختبارات لم تُشغّل |
+| P10-T2 — حذف الوسائط المؤقتة | تنظيف آلي للوسائط المؤقتة بعد 3 أشهر من موعد الزفاف، مع استثناء PNG وسجلات الأعمال. | P6-T2، P7-T1، P8-T3 | لا حذف للبطاقة النهائية أو مستندات الأعمال؛ التنظيف آمن عند إعادة المحاولة ومسجل. اختبارات سياسة وملفات تجريبية. | متوسط | التنفيذ والبناء مكتملان؛ الاختبارات لم تُشغّل |
 
 # المرحلة P11 — لوحة المتابعة وسجل التدقيق
 
 | المهمة | الهدف والمخرجات والملفات المتوقعة | الاعتماديات | القبول والاختبار المطلوب | التعقيد | الحالة |
 |---|---|---|---|---|---|
-| P11-T1 — Dashboard | API وواجهة إحصائيات الدعوات والطلبات والجديد والمنتهي، والإيراد/المتبقي عند توافر بيانات الدفع. | P5-T3، P8-T1، P2-T3 | الأرقام محسوبة من DB والخادم، وتُحترم الصلاحيات والفلاتر الزمنية المتفق عليها. اختبارات حساب وتحقق يدوي. | متوسط | مخططة |
-| P11-T2 — Audit Log | تسجيل وعرض بحثي للأحداث الحساسة: المستخدم، الفعل، السجل المتأثر، الوقت والنتيجة، مع منع تخزين الأسرار. | P2-T3، P5-T2، P7-T4، P8-T1، P9-T2 | السجل لا يتضمن كلمات مرور أو raw tokens؛ عرضه لصلاحية Super Admin. اختبارات محتوى وصلاحيات. | كبير | مخططة |
+| P11-T1 — Dashboard | API وواجهة إحصائيات الدعوات والطلبات والجديد والمنتهي، والإيراد/المتبقي عند توافر بيانات الدفع. | P5-T3، P8-T1، P2-T3 | الأرقام محسوبة من DB والخادم، وتُحترم الصلاحيات والفلاتر الزمنية المتفق عليها. اختبارات حساب وتحقق يدوي. | متوسط | Complete; build passed; tests covered in P12 |
+| P11-T2 — Audit Log | تسجيل وعرض بحثي للأحداث الحساسة: المستخدم، الفعل، السجل المتأثر، الوقت والنتيجة، مع منع تخزين الأسرار. | P2-T3، P5-T2، P7-T4، P8-T1، P9-T2 | السجل لا يتضمن كلمات مرور أو raw tokens؛ عرضه لصلاحية Super Admin. اختبارات محتوى وصلاحيات. | كبير | Complete; build passed; tests covered in P12 |
 
 # المرحلة P12 — الاختبارات والتجهيز للإطلاق
 
 | المهمة | الهدف والمخرجات والملفات المتوقعة | الاعتماديات | القبول والاختبار المطلوب | التعقيد | الحالة |
 |---|---|---|---|---|---|
-| P12-T1 — استكمال Unit/Integration Tests | تغطية حساب الدفع، قواعد القوالب والإضافات، صلاحيات الحسابات، الروابط الخاصة، النشر والانتهاء، RSVP والحذف. مشاريع Tests للـBusiness والـAPI. | P3–P11 | كل قاعدة حرجة لها اختبار؛ CI محلي يعرض النتائج الفعلية بوضوح. تشغيل مجموعات الاختبار وتوثيق النتائج. | كبير | مخططة |
-| P12-T2 — مراجعة الأمان والتجربة والأداء | مراجعة RTL وresponsive، التحقق والرفع وrate limits والـcookies والـCSRF وفتح الدعوات وسرعة الصفحات. | P2–P11 | لا أسرار في Git؛ لا ثغرة صلاحيات معروفة؛ أخطاء عربية مفهومة؛ فحص يدوي على أحجام شاشات متعددة. | كبير | مخططة |
-| P12-T3 — التوثيق والتسليم | تحديث README وAPI setup والبيئة والإطلاق والنسخ الاحتياطية ولقطات شاشة وحقوق الملكية. | P12-T1، P12-T2 | مطور جديد يستطيع الإعداد والتشغيل باتباع الوثائق؛ لا License مفتوح المصدر ولا بيانات خاصة منشورة. مراجعة خطوات من بيئة نظيفة. | متوسط | مخططة |
+| P12-T1 — استكمال Unit/Integration Tests | تغطية حساب الدفع، قواعد القوالب والإضافات، صلاحيات الحسابات، الروابط الخاصة، النشر والانتهاء، RSVP والحذف. مشاريع Tests للـBusiness والـAPI. | P3–P11 | كل قاعدة حرجة لها اختبار؛ CI محلي يعرض النتائج الفعلية بوضوح. تشغيل مجموعات الاختبار وتوثيق النتائج. | كبير | Partial; 36 tests pass; SQL Server expiration-query coverage remains |
+| P12-T2 — مراجعة الأمان والتجربة والأداء | مراجعة RTL وresponsive، التحقق والرفع وrate limits والـcookies والـCSRF وفتح الدعوات وسرعة الصفحات. | P2–P11 | لا أسرار في Git؛ لا ثغرة صلاحيات معروفة؛ أخطاء عربية مفهومة؛ فحص يدوي على أحجام شاشات متعددة. | كبير | Source review complete; browser viewport QA blocked by unavailable UI host |
+| P12-T3 — التوثيق والتسليم | تحديث README وAPI setup والبيئة والإطلاق والنسخ الاحتياطية ولقطات شاشة وحقوق الملكية. | P12-T1، P12-T2 | مطور جديد يستطيع الإعداد والتشغيل باتباع الوثائق؛ لا License مفتوح المصدر ولا بيانات خاصة منشورة. مراجعة خطوات من بيئة نظيفة. | متوسط | Docs updated; clean-machine and screenshot checks remain |
 
 ---
 
@@ -161,3 +161,28 @@
 3. نبدأ كل مهمة بشرح المشكلة والاعتماديات والملفات المتوقعة، ثم نختم بالملخص والاختبار الفعلي وخطوات المراجعة.
 4. نحافظ على بساطة الكود، ونضع قواعد العمل في Business، وتفاصيل EF في DataAccess، وHTTP في API، وواجهة المستخدم في Frontend.
 5. نضيف اختبارات المهمة حسب الخطة ونشغل المتاح منها، ولا نعلن النجاح إلا بعد التحقق من النتيجة الفعلية.
+
+## P12 verification notes
+
+The local automated suite currently passes 36 tests. The browser access host was unavailable during this pass, so responsive visual checks and screenshots were not captured. The SQL Server-specific expiration batch query still needs a provider-backed test. These release checks remain open; no production deployment was attempted.
+
+# Phase P29 - Public Website and Design Showcase
+
+| Task | Deliverables | Status |
+|---|---|---|
+| P29-T1 - Public templates API | Anonymous listing of active templates with active versions; public feature metadata only; no package keys or customer data; activation/deactivation integration coverage | Complete; integration tests pass |
+| P29-T2 - Website and demo previews | Single public home at `/`, responsive design gallery and sample previews, service steps, configurable WhatsApp contact; admin remains protected at `/admin` | Implemented; frontend build passes; visual QA pending |
+| P29-T3 - Security and delivery | Unsafe image URL filtering, environment-based contact configuration, and package-key non-disclosure checks | Complete; automated checks pass |
+
+# Phase P30 - Future Invitation Experience
+
+These tasks record the supplied future requirements only. Do not implement them until the developer reviews and approves this roadmap. The Cinematic concept's detailed design is pending visual discussion and approval.
+
+| Task | Deliverables | Dependencies | Acceptance and validation | Status |
+|---|---|---|---|---|
+| P30-T1 - Visual-first template design workflow | Per-template concept, visual review/approval, layout/color/type/sections, then separate React template; mobile/desktop review; first concept is Cinematic | P4, P7, P29 | No implementation before approval; no invented Cinematic details; record approved assets/specification | Planned - visual specification pending |
+| P30-T2 - Template-specific motion | Optional motion capabilities per approved template, reduced-motion handling, purposeful performant animation | P30-T1 | Motion never hides event information; test mobile/desktop and reduced-motion; no animation assumed globally | Planned - visual specification pending |
+| P30-T3 - Dynamic invitation social metadata | Per-invitation title, description, suitable image, crawler-compatible rendering, expiration-safe fallback, cache refresh strategy | P7, P8, P29 | No private information in metadata; validate WhatsApp/common crawler previews and expired invitations | Planned |
+| P30-T4 - Optional event countdown | Countdown based on actual local event date/time and time zone; template-configurable post-event message; independent of invitation expiration | P7, P10, P30-T1 | Correct event-time boundary, automatic transition, time-zone/DST coverage, and accessible reduced-motion presentation | Planned |
+| P30-T5 - Final RSVP attendance rule | Backend counts responding Yes guest plus entered companions; No has zero attendance and no companions; dashboard uses backend aggregate | P9, P11 | Unit/API tests for Yes/No, updates, totals, and dashboard aggregation; frontend cannot set final attendance | Planned |
+| P30-T6 - Public, invitation, and admin experience alignment | Preserve separate public marketing, invitation, and protected admin areas; Arabic RTL and responsive behavior | P29, P30-T1 | Verify public data isolation, responsive layouts, RTL, and role restrictions across all areas | Planned |

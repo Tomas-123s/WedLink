@@ -19,6 +19,11 @@ using System.Threading.RateLimiting;
 using WedLink.API.Filters;
 using WedLink.Business.Guests;
 using WedLink.DataAccess.Guests;
+using WedLink.API.Services;
+using WedLink.Business.Dashboard;
+using WedLink.DataAccess.Dashboard;
+using WedLink.Business.Audit;
+using WedLink.DataAccess.Audit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,8 +56,25 @@ builder.Services.AddSingleton<IPrivateLinkTokenGenerator, PrivateLinkTokenGenera
 builder.Services.AddScoped<CustomerSubmissionService>();
 builder.Services.AddScoped<IInvitationRepository, EfInvitationRepository>();
 builder.Services.AddScoped<InvitationService>();
+builder.Services.AddScoped<IInvitationExpirationRepository, EfInvitationRepository>();
+builder.Services.AddScoped<InvitationExpirationService>();
+builder.Services.AddScoped<IMediaRetentionRepository, EfMediaRetentionRepository>();
+builder.Services.AddScoped<MediaRetentionService>();
+builder.Services.AddSingleton(TimeProvider.System);
+var invitationLifecycleSettings = new InvitationLifecycleSettings(
+    builder.Configuration.GetValue("InvitationLifecycle:DefaultValidityMonths", InvitationLifecycleSettings.DefaultValidityMonthsValue),
+    builder.Configuration.GetValue("InvitationLifecycle:ExpirationIntervalMinutes", InvitationLifecycleSettings.DefaultExpirationIntervalMinutes),
+    builder.Configuration.GetValue("InvitationLifecycle:MediaCleanupIntervalMinutes", InvitationLifecycleSettings.DefaultMediaCleanupIntervalMinutes));
+invitationLifecycleSettings.Validate();
+builder.Services.AddSingleton(invitationLifecycleSettings);
+builder.Services.AddHostedService<InvitationExpirationWorker>();
+builder.Services.AddHostedService<MediaRetentionWorker>();
 builder.Services.AddScoped<IGuestRepository, EfGuestRepository>();
 builder.Services.AddScoped<GuestService>();
+builder.Services.AddScoped<IAdminDashboardRepository, EfAdminDashboardRepository>();
+builder.Services.AddScoped<AdminDashboardService>();
+builder.Services.AddScoped<IAuditLogRepository, EfAuditLogRepository>();
+builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddSingleton<ISubmissionFileStorage>(_ => new LocalSubmissionFileStorage(
     builder.Environment.ContentRootPath,
     builder.Configuration["Storage:CustomerSubmissionPath"]));
@@ -170,8 +192,12 @@ builder.Services.AddProblemDetails(options =>
 });
 
 builder.Services.AddScoped<AdminAntiforgeryFilter>();
+builder.Services.AddScoped<AdminAuditFilter>();
 builder.Services.AddControllers(options =>
-    options.Filters.AddService<AdminAntiforgeryFilter>());
+{
+    options.Filters.AddService<AdminAntiforgeryFilter>();
+    options.Filters.AddService<AdminAuditFilter>();
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
