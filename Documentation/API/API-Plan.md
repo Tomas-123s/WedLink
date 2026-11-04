@@ -162,7 +162,7 @@ Financial values are decimal amounts. The total is the agreed base price plus ad
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/admin/dashboard/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Return invitation/order summary counts and financial summaries for inclusive Cairo dates; defaults to the current month |
+| GET | `/admin/dashboard/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Return invitation/order summary counts, backend expected-attendance total for currently active invitations, and financial summaries for inclusive Cairo dates; defaults to the current month |
 | GET | `/admin/users` | List admin users (permission restricted) |
 | POST | `/admin/users` | Create an admin account (Super Admin only) |
 | PUT | `/admin/users/{userId}/roles` | Assign roles/permissions (Super Admin only) |

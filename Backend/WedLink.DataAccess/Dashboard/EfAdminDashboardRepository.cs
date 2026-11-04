@@ -25,7 +25,12 @@ public sealed class EfAdminDashboardRepository(WedLinkDbContext db) : IAdminDash
         var published = await db.Invitations.CountAsync(i => i.PublishedAt >= range.FromUtc && i.PublishedAt < range.ToExclusiveUtc && db.Orders.Any(o => o.OrderId == i.OrderId && o.DeletedAt == null), cancellationToken);
         var expired = await db.Invitations.CountAsync(i => i.ExpiresAt >= range.FromUtc && i.ExpiresAt < range.ToExclusiveUtc && (i.Status == "Expired" || i.ExpiresAt <= now) && db.Orders.Any(o => o.OrderId == i.OrderId && o.DeletedAt == null), cancellationToken);
         var active = await db.Invitations.CountAsync(i => i.Status == "Published" && i.ExpiresAt > now && db.Orders.Any(o => o.OrderId == i.OrderId && o.DeletedAt == null), cancellationToken);
+        var expectedAttendance = await (from response in db.RsvpResponses.AsNoTracking()
+                                        join invitation in db.Invitations.AsNoTracking() on response.InvitationId equals invitation.InvitationId
+                                        where response.Response == "Yes" && invitation.Status == "Published" && invitation.ExpiresAt > now
+                                            && db.Orders.Any(o => o.OrderId == invitation.OrderId && o.DeletedAt == null)
+                                        select (long)response.AccompanyingPeople + 1L).SumAsync(cancellationToken);
         return new(range.From, range.To, orderRows.Count, counts.FirstOrDefault(c => c.Status == "New")?.Count ?? 0,
-            counts, published, expired, active, payments, balances);
+            counts, published, expired, active, expectedAttendance, payments, balances);
     }
 }

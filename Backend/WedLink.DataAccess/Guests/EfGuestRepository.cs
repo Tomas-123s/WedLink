@@ -29,9 +29,9 @@ public sealed class EfGuestRepository(WedLinkDbContext db) : IGuestRepository
             .Select(item => new GuestMessageData(item.GuestMessageId, item.GuestName, item.Message, item.SubmittedAt))
             .ToListAsync(cancellationToken);
 
-    public async Task<int> GetExpectedAttendanceAsync(int invitationId, CancellationToken cancellationToken = default) =>
+    public async Task<long> GetExpectedAttendanceAsync(int invitationId, CancellationToken cancellationToken = default) =>
         await db.RsvpResponses.AsNoTracking().Where(item => item.InvitationId == invitationId && item.Response == "Yes")
-            .SumAsync(item => 1 + item.AccompanyingPeople, cancellationToken);
+            .SumAsync(item => (long)item.AccompanyingPeople + 1L, cancellationToken);
 
     public async Task<GuestRsvpData?> SaveRsvpAsync(int invitationId, string editTokenHash, bool updateOnly,
         GuestRsvpInput input, DateTimeOffset now, CancellationToken cancellationToken = default)
@@ -150,6 +150,6 @@ public sealed class EfGuestRepository(WedLinkDbContext db) : IGuestRepository
                select setting.TemplateVersionId).AnyAsync(cancellationToken);
 
     private static GuestRsvpData Map(RsvpResponse item) => new(item.RsvpResponseId, item.Response, item.GuestName,
-        item.AccompanyingPeople, item.Response == "Yes" ? 1 + item.AccompanyingPeople : 0, item.SubmittedAt, item.UpdatedAt);
+        item.AccompanyingPeople, item.Response == "Yes" ? 1L + item.AccompanyingPeople : 0L, item.SubmittedAt, item.UpdatedAt);
     private static MusicTrackData Map(MusicTrack item) => new(item.MusicTrackId, item.Title, item.Artist, item.RightsReference, item.ContentType, item.IsActive);
 }

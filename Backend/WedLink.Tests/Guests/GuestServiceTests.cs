@@ -45,7 +45,7 @@ public sealed class GuestServiceTests
         public string? SavedHash { get; private set; }
         public Task<GuestInvitationContext?> GetPublicContextAsync(string slug, DateTimeOffset now, CancellationToken cancellationToken = default) => Task.FromResult<GuestInvitationContext?>(Context);
         public Task<IReadOnlyList<GuestMessageData>> GetPublicMessagesAsync(int invitationId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<GuestMessageData>>([]);
-        public Task<int> GetExpectedAttendanceAsync(int invitationId, CancellationToken cancellationToken = default) => Task.FromResult(0);
+        public Task<long> GetExpectedAttendanceAsync(int invitationId, CancellationToken cancellationToken = default) => Task.FromResult(0L);
         public Task<GuestRsvpData?> SaveRsvpAsync(int id, string hash, bool update, GuestRsvpInput input, DateTimeOffset now, CancellationToken cancellationToken = default)
         {
             Saved = input; SavedHash = hash;

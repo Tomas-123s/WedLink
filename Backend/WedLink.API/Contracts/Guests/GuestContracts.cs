@@ -6,15 +6,15 @@ namespace WedLink.API.Contracts.Guests;
 public sealed record GuestRsvpRequest([Required] string Response, [StringLength(150)] string? GuestName,
     [Range(0, int.MaxValue - 1)] int AccompanyingPeople, [StringLength(100)] string? EditToken);
 public sealed record GuestRsvpResponse(int RsvpResponseId, string Response, string? GuestName, int AccompanyingPeople,
-    int ExpectedAttendance, DateTimeOffset SubmittedAt, DateTimeOffset? UpdatedAt, string EditToken, bool IsUpdate)
+    long ExpectedAttendance, DateTimeOffset SubmittedAt, DateTimeOffset? UpdatedAt, string EditToken, bool IsUpdate)
 {
     public static GuestRsvpResponse FromData(GuestRsvpSubmissionData item) => new(item.Response.RsvpResponseId,
         item.Response.Response, item.Response.GuestName, item.Response.AccompanyingPeople,
         item.Response.ExpectedAttendance, item.Response.SubmittedAt, item.Response.UpdatedAt, item.EditToken, item.IsUpdate);
 }
 public sealed record RsvpItemResponse(int RsvpResponseId, string Response, string? GuestName, int AccompanyingPeople,
-    int ExpectedAttendance, DateTimeOffset SubmittedAt, DateTimeOffset? UpdatedAt);
-public sealed record RsvpSummaryResponse(int YesCount, int NoCount, int ExpectedAttendance, IReadOnlyList<RsvpItemResponse> Responses)
+    long ExpectedAttendance, DateTimeOffset SubmittedAt, DateTimeOffset? UpdatedAt);
+public sealed record RsvpSummaryResponse(int YesCount, int NoCount, long ExpectedAttendance, IReadOnlyList<RsvpItemResponse> Responses)
 {
     public static RsvpSummaryResponse FromData(GuestRsvpSummaryData item) => new(item.YesCount, item.NoCount,
         item.ExpectedAttendance, item.Responses.Select(row => new RsvpItemResponse(row.RsvpResponseId, row.Response,
@@ -25,7 +25,7 @@ public sealed record GuestMessageResponse(int GuestMessageId, string? GuestName,
 public sealed record AdminGuestMessageResponse(int GuestMessageId, string? GuestName, string Message, DateTimeOffset SubmittedAt,
     DateTimeOffset? DeletedAt, string? DeletedByAdminUserId);
 public sealed record PublicGuestInteractionsResponse(bool RsvpEnabled, int? MaximumAccompanyingPeople, bool GuestCountEnabled,
-    int ExpectedAttendance, bool MessagesEnabled, IReadOnlyList<GuestMessageResponse> Messages,
+    long ExpectedAttendance, bool MessagesEnabled, IReadOnlyList<GuestMessageResponse> Messages,
     bool MusicEnabled, PublicMusicTrackResponse? MusicTrack, string? MusicUrl)
 {
     public static PublicGuestInteractionsResponse FromData(GuestInteractionData item) => new(item.RsvpEnabled,

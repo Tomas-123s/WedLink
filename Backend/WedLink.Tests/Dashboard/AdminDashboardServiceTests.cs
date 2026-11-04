@@ -33,7 +33,7 @@ public sealed class AdminDashboardServiceTests
         public Task<DashboardSummaryData> GetSummaryAsync(DashboardDateRange range, DateTimeOffset now, CancellationToken cancellationToken = default)
         {
             Range = range;
-            return Task.FromResult(new DashboardSummaryData(range.From, range.To, 0, 0, [], 0, 0, 0, [], []));
+            return Task.FromResult(new DashboardSummaryData(range.From, range.To, 0, 0, [], 0, 0, 0, 0, [], []));
         }
     }
 
