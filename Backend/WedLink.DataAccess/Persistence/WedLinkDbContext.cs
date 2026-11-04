@@ -8,6 +8,8 @@ using WedLink.DataAccess.Persistence.Configurations;
 using WedLink.DataAccess.Persistence.Configurations.Orders;
 using WedLink.DataAccess.Persistence.Configurations.Invitations;
 using WedLink.DataAccess.Templates;
+using WedLink.DataAccess.Guests;
+using WedLink.DataAccess.Persistence.Configurations.Guests;
 
 namespace WedLink.DataAccess.Persistence;
 
@@ -26,6 +28,9 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
     public DbSet<InvitationCustomization> InvitationCustomizations => Set<InvitationCustomization>();
     public DbSet<InvitationMedia> InvitationMedia => Set<InvitationMedia>();
     public DbSet<PreviewReviewEvent> PreviewReviewEvents => Set<PreviewReviewEvent>();
+    public DbSet<RsvpResponse> RsvpResponses => Set<RsvpResponse>();
+    public DbSet<GuestMessage> GuestMessages => Set<GuestMessage>();
+    public DbSet<MusicTrack> MusicTracks => Set<MusicTrack>();
     public DbSet<Template> Templates => Set<Template>();
     public DbSet<TemplateVersion> TemplateVersions => Set<TemplateVersion>();
     public DbSet<Feature> Features => Set<Feature>();
@@ -55,6 +60,9 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
         modelBuilder.ApplyConfiguration(new InvitationCustomizationConfiguration());
         modelBuilder.ApplyConfiguration(new InvitationMediaConfiguration());
         modelBuilder.ApplyConfiguration(new PreviewReviewEventConfiguration());
+        modelBuilder.ApplyConfiguration(new RsvpResponseConfiguration());
+        modelBuilder.ApplyConfiguration(new GuestMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new MusicTrackConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateVersionConfiguration());
         modelBuilder.ApplyConfiguration(new FeatureConfiguration());

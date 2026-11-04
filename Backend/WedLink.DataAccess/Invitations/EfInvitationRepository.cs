@@ -10,6 +10,148 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
 {
     private const string PreviewPurpose = "InvitationPreview";
 
+    public async Task<InvitationData?> GetForAdminByInvitationIdAsync(int invitationId, CancellationToken cancellationToken = default)
+    {
+        var orderId = await db.Invitations.AsNoTracking().Where(item => item.InvitationId == invitationId)
+            .Select(item => (int?)item.OrderId).FirstOrDefaultAsync(cancellationToken);
+        return orderId is null ? null : await GetForAdminAsync(orderId.Value, cancellationToken);
+    }
+
+    public async Task<InvitationLifecycleFailure> PublishAsync(int invitationId, string slug, DateTimeOffset now,
+        DateTimeOffset expiresAt, DateTimeOffset mediaDeleteAt, CancellationToken cancellationToken = default)
+    {
+        var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
+        if (invitation is null) return InvitationLifecycleFailure.NotFound;
+        if (invitation.Status != "Approved") return InvitationLifecycleFailure.NotApproved;
+        if (invitation.WeddingDateTimeLocal is null) return InvitationLifecycleFailure.MissingWeddingDate;
+        if (await db.Invitations.AnyAsync(item => item.Slug == slug && item.InvitationId != invitationId, cancellationToken))
+            return InvitationLifecycleFailure.SlugConflict;
+        invitation.Slug = slug;
+        invitation.Status = "Published";
+        invitation.PublishedAt = now;
+        invitation.ExpiresAt = expiresAt;
+        invitation.MediaDeleteAt = mediaDeleteAt;
+        invitation.PausedAt = null;
+        invitation.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        return InvitationLifecycleFailure.None;
+    }
+
+    public async Task<InvitationLifecycleFailure> SetPublicationStateAsync(int invitationId, string action, DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
+        if (invitation is null) return InvitationLifecycleFailure.NotFound;
+        if (invitation.ExpiresAt is null || invitation.ExpiresAt <= now)
+        {
+            if (invitation.PublishedAt is not null && invitation.Status != "Expired")
+            {
+                invitation.Status = "Expired";
+                invitation.PausedAt = null;
+                invitation.UpdatedAt = now;
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            return InvitationLifecycleFailure.Expired;
+        }
+        if (action == "Pause" && invitation.Status == "Published")
+        {
+            invitation.Status = "Paused";
+            invitation.PausedAt = now;
+        }
+        else if (action == "Reactivate" && invitation.Status == "Paused")
+        {
+            invitation.Status = "Published";
+            invitation.PausedAt = null;
+        }
+        else return InvitationLifecycleFailure.InvalidState;
+        invitation.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        return InvitationLifecycleFailure.None;
+    }
+
+    public async Task<InvitationLifecycleFailure> ExtendAsync(int invitationId, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
+        if (invitation is null) return InvitationLifecycleFailure.NotFound;
+        if (invitation.Status is not ("Published" or "Paused") || invitation.ExpiresAt is null)
+            return InvitationLifecycleFailure.InvalidState;
+        if (invitation.ExpiresAt <= now)
+        {
+            invitation.Status = "Expired";
+            invitation.PausedAt = null;
+            invitation.UpdatedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+            return InvitationLifecycleFailure.Expired;
+        }
+        invitation.ExpiresAt = invitation.ExpiresAt.Value.AddMonths(1);
+        invitation.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        return InvitationLifecycleFailure.None;
+    }
+
+    public async Task<PublicInvitationData?> GetPublicAsync(string slug, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var row = await (from invitation in db.Invitations.AsNoTracking()
+                         join order in db.Orders.AsNoTracking() on invitation.OrderId equals order.OrderId
+                         join version in db.TemplateVersions.AsNoTracking() on invitation.TemplateVersionId equals version.TemplateVersionId
+                         join template in db.Templates.AsNoTracking() on version.TemplateId equals template.TemplateId
+                         where invitation.Slug == slug && order.DeletedAt == null
+                         select new { invitation, template.Name }).FirstOrDefaultAsync(cancellationToken);
+        if (row is null || row.invitation.Status is "Expired" || row.invitation.ExpiresAt <= now)
+            return row is null ? null : new PublicInvitationData(true, row.invitation.FinalPngStorageKey is not null, "", "", "", null, "Africa/Cairo", null, null, null, null, [], []);
+        if (row.invitation.Status != "Published") return null;
+        var (bride, groom) = ParseCoupleNames(row.invitation.CoupleNames);
+        var features = await (from setting in db.TemplateFeatures.AsNoTracking()
+                              join feature in db.Features.AsNoTracking() on setting.FeatureId equals feature.FeatureId
+                              where setting.TemplateVersionId == row.invitation.TemplateVersionId && setting.IsEnabled
+                              select new InvitationFeatureData(feature.Key, feature.Name, true, setting.MaximumCount, setting.MaximumFileSizeMb))
+            .ToListAsync(cancellationToken);
+        var customizations = await GetCustomizationsAsync(row.invitation.InvitationId, cancellationToken);
+        var media = await db.InvitationMedia.AsNoTracking().Where(item => item.InvitationId == row.invitation.InvitationId && item.DeletedAt == null)
+            .OrderBy(item => item.SortOrder).Select(item => new PublicInvitationMediaData(item.InvitationMediaId,
+                item.MediaType, item.OriginalFileName, item.ContentType, item.StorageKey)).ToListAsync(cancellationToken);
+        return new PublicInvitationData(false, row.invitation.FinalPngStorageKey is not null, row.Name, bride, groom, row.invitation.WeddingDateTimeLocal,
+            row.invitation.TimeZoneId, row.invitation.VenueName, row.invitation.VenueAddress, row.invitation.LocationUrl,
+            customizations, features, media);
+    }
+
+    public async Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int mediaId, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var invitation = await db.Invitations.AsNoTracking().FirstOrDefaultAsync(item => item.Slug == slug
+            && item.Status == "Published" && item.ExpiresAt > now
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
+        if (invitation is null) return null;
+        return await db.InvitationMedia.AsNoTracking().Where(item => item.InvitationId == invitation.InvitationId
+            && item.InvitationMediaId == mediaId && item.DeletedAt == null)
+            .Select(item => new PublicMediaContentData(item.StorageKey, item.ContentType, item.OriginalFileName)).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<InvitationLifecycleFailure> SetFinalPngAsync(int invitationId, string storageKey, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
+        if (invitation is null) return InvitationLifecycleFailure.NotFound;
+        if (invitation.FinalPngStorageKey is not null) return InvitationLifecycleFailure.InvalidState;
+        if (invitation.Status is not ("Approved" or "Published")) return InvitationLifecycleFailure.InvalidState;
+        invitation.FinalPngStorageKey = storageKey;
+        invitation.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        return InvitationLifecycleFailure.None;
+    }
+
+    public async Task<InvitationCardData?> GetFinalPngAsync(int invitationId, CancellationToken cancellationToken = default) =>
+        await db.Invitations.AsNoTracking().Where(item => item.InvitationId == invitationId && item.FinalPngStorageKey != null
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null))
+            .Select(item => new InvitationCardData(item.FinalPngStorageKey!, "image/png")).FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken cancellationToken = default) =>
+        await db.Invitations.AsNoTracking().Where(item => item.Slug == slug && item.FinalPngStorageKey != null
+            && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null))
+            .Select(item => new InvitationCardData(item.FinalPngStorageKey!, "image/png")).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<InvitationData?> GetForAdminAsync(int orderId, CancellationToken cancellationToken = default)
     {
         var row = await (from order in db.Orders.AsNoTracking()
@@ -53,13 +195,19 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
         var (brideName, groomName) = row.invitation is null
             ? (row.submission?.BrideName ?? "", row.submission?.GroomName ?? "")
             : ParseCoupleNames(row.invitation.CoupleNames);
-        return new InvitationData(orderId, row.invitation?.InvitationId, row.SelectedTemplateVersionId, row.Name,
+        var currentStatus = row.invitation?.Status ?? "Draft";
+        if (row.invitation?.ExpiresAt is DateTimeOffset expiry && expiry <= DateTimeOffset.UtcNow
+            && currentStatus is ("Published" or "Paused")) currentStatus = "Expired";
+        return new InvitationData(orderId, row.invitation?.InvitationId, row.SelectedTemplateVersionId, row.invitation?.MusicTrackId, row.Name,
             row.VersionNumber, brideName, groomName,
             row.invitation?.WeddingDateTimeLocal ?? row.submission?.WeddingDateTimeLocal,
             row.invitation?.TimeZoneId ?? row.submission?.TimeZoneId ?? "Africa/Cairo",
             row.invitation?.VenueName ?? row.submission?.VenueName, row.invitation?.VenueAddress ?? row.submission?.VenueAddress,
             row.invitation?.LocationUrl ?? row.submission?.LocationUrl, customizations,
-            row.invitation?.Status ?? "Draft", row.invitation?.UpdatedAt, features, availableMedia, selectedMediaIds, reviewEvents);
+            currentStatus, row.invitation?.Slug ?? string.Empty, row.invitation?.PublishedAt,
+            row.invitation?.ExpiresAt, row.invitation?.PausedAt, row.invitation?.UpdatedAt,
+            row.invitation?.FinalPngStorageKey is not null,
+            features, availableMedia, selectedMediaIds, reviewEvents);
     }
 
     public async Task<InvitationSaveResult> SaveAsync(int orderId, SaveInvitationInput input, DateTimeOffset now, CancellationToken cancellationToken = default)
@@ -78,7 +226,7 @@ public sealed class EfInvitationRepository(WedLinkDbContext db) : IInvitationRep
             };
             db.Invitations.Add(invitation);
         }
-        else if (invitation.Status == "Published" || invitation.Status == "Expired")
+        else if (invitation.Status is "Published" or "Paused" or "Expired" || invitation.FinalPngStorageKey is not null)
         {
             return new(null, InvitationSaveFailure.InvitationLocked);
         }

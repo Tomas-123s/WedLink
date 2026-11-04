@@ -32,6 +32,7 @@ This document records business decisions that affect implementation. Operational
 | BD-20 | Customer upload limits | Allow JPEG, PNG, and WebP images up to 10 MB each; MP4 video up to 100 MB; MP3/M4A audio up to 20 MB; total active customer media is limited to 500 MB per order. | Developer clarification, 2026-11-04 |
 | BD-21 | File storage | Use local file storage for development behind a replaceable storage interface. Production provider selection is deferred. | Developer clarification, 2026-11-04 |
 | BD-22 | Invitation preview link | Preview links expire 14 days after creation. Creating a replacement revokes all previous active preview links for that order. | Developer clarification, 2026-11-04 |
+| BD-23 | Invitation extensions | An admin may extend a published or paused, unexpired invitation by one calendar month at a time. An expired invitation cannot be extended or reactivated. | Developer clarification, 2026-11-04 |
 
 ## Decisions to revisit when implementation reaches them
 

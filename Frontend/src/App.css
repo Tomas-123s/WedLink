@@ -766,7 +766,55 @@
 .preview-media figcaption { padding-top: 7px; color: #776971; font-size: 13px; overflow-wrap: anywhere; }
 .preview-feedback > p { color: #6a5c62; }
 
+.public-invitation-state { width: min(100%, 720px); margin: 36px auto; padding: 38px 24px; border: 1px solid #e8e1d9; border-radius: 20px; background: #fff; text-align: center; box-shadow: 0 16px 48px rgb(56 44 31 / 8%); }
+.public-invitation-state h1 { color: #71495b; }
+.public-invitation { display: grid; gap: 22px; width: min(100%, 920px); margin: 0 auto; color: #30252a; }
+.public-invitation-hero { display: grid; justify-items: center; gap: 14px; padding: clamp(42px, 9vw, 100px) 24px; border: 1px solid #e7d9df; border-radius: 22px; background: linear-gradient(145deg, #fff, #f5e9ee); text-align: center; box-shadow: 0 16px 48px rgb(56 44 31 / 7%); }
+.public-invitation-kicker { margin: 0; color: #9a705d; font-weight: 700; }
+.public-invitation-ornament { color: #b98c79; font-size: 36px; }
+.public-invitation-intro, .public-invitation-date, .public-invitation-venue, .public-invitation-address, .public-invitation-template { margin: 0; color: #6a5c62; line-height: 1.8; }
+.public-invitation-hero h1 { display: grid; gap: 4px; margin: 8px 0; color: #71495b; font-size: clamp(36px, 8vw, 64px); line-height: 1.35; }
+.public-invitation-hero h1 span { color: #b98c79; font: 38px Georgia, serif; }
+.public-invitation-date { font-size: 18px; font-weight: 700; }
+.public-invitation-map, .public-invitation-card-download { color: #71495b; font-weight: 700; }
+.public-invitation-section { padding: 24px; border: 1px solid #eee8e4; border-radius: 16px; background: #fff; }
+.public-invitation-section h2 { margin: 0 0 16px; color: #71495b; }
+.public-invitation-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 0; }
+.public-invitation-details div { padding: 14px; border-radius: 10px; background: #fcfaf9; }
+.public-invitation-details dt { color: #776971; font-size: 13px; }
+.public-invitation-details dd { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.public-invitation-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.public-invitation-gallery img, .public-invitation-section video { display: block; width: 100%; max-height: 520px; border-radius: 12px; object-fit: contain; background: #f7f5f2; }
+.public-invitation-section audio { width: 100%; }
+.public-invitation-footer { padding: 24px 12px; color: #806052; text-align: center; }
+.invitation-publish-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 16px; border-top: 1px solid #eee8e4; }
+.invitation-publish-tools h3 { flex-basis: 100%; }
+.invitation-card-download { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; border: 1px solid #d9cfd3; border-radius: 9px; background: #fff; text-decoration: none; }
+.guest-interactions { display: grid; gap: 24px; }
+.guest-interactions h2, .guest-admin-panel h3 { margin: 0 0 10px; color: #71495b; }
+.guest-interactions select { min-height: 42px; padding: 9px 11px; border: 1px solid #d9cfd3; border-radius: 9px; background: #fff; }
+.guest-attendance-count { margin: 0; padding: 14px; border-radius: 10px; background: #f7f0f3; color: #5f3b4b; }
+.guest-music audio { width: 100%; }
+.public-guest-messages { display: grid; gap: 10px; margin-top: 18px; }
+.public-guest-messages article, .admin-guest-message { padding: 14px; border: 1px solid #eee8e4; border-radius: 10px; background: #fcfaf9; }
+.public-guest-messages p, .admin-guest-message p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guest-admin-panel { display: grid; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee8e4; }
+.guest-admin-list { display: grid; gap: 8px; }
+.guest-admin-list article, .music-track-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #eee8e4; border-radius: 10px; }
+.guest-admin-list time, .admin-guest-message time { color: #776971; font-size: 12px; }
+.admin-guest-message > div { display: flex; justify-content: space-between; gap: 10px; }
+.admin-guest-message.is-deleted { opacity: .65; }
+.music-library-page { display: grid; gap: 20px; }
+.music-library-layout { display: grid; grid-template-columns: minmax(270px, .8fr) minmax(0, 1.2fr); align-items: start; gap: 20px; }
+.music-track-row { align-items: flex-start; margin-top: 10px; }
+.music-track-row p { margin: 5px 0; color: #776971; font-size: 13px; }
+.music-track-row small { color: #776971; overflow-wrap: anywhere; }
+
 @media (max-width: 520px) {
   .preview-content { padding: 18px 14px; }
   .preview-gallery { grid-template-columns: 1fr; }
+  .public-invitation-section { padding: 18px 14px; }
+  .public-invitation-gallery { grid-template-columns: 1fr; }
+  .music-library-layout { grid-template-columns: 1fr; }
+  .guest-admin-list article { align-items: flex-start; flex-direction: column; }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 using WedLink.Business.CustomerSubmissions;
 
 namespace WedLink.Business.Invitations;
@@ -94,6 +95,59 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
 
     public async Task<IReadOnlyList<PreviewReviewEventData>> GetReviewEventsAsync(int orderId, CancellationToken cancellationToken = default) =>
         await repository.GetReviewEventsAsync(orderId, cancellationToken) ?? throw new InvitationNotFoundException();
+
+    public async Task PublishAsync(int invitationId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var invitation = await repository.GetForAdminByInvitationIdAsync(invitationId, cancellationToken)
+            ?? throw new InvitationNotFoundException();
+        if (invitation.WeddingDateTimeLocal is null) throw new InvitationValidationException("أدخل موعد الزفاف قبل النشر.");
+        TimeZoneInfo zone;
+        try { zone = TimeZoneInfo.FindSystemTimeZoneById(invitation.TimeZoneId); }
+        catch (TimeZoneNotFoundException) { throw new InvitationValidationException("المنطقة الزمنية للدعوة غير مدعومة."); }
+        var wedding = invitation.WeddingDateTimeLocal.Value;
+        var expiresAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(wedding.AddMonths(2), zone), TimeSpan.Zero);
+        var mediaDeleteAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(wedding.AddMonths(3), zone), TimeSpan.Zero);
+        if (expiresAt <= now) throw new InvitationValidationException("انتهت مدة صلاحية الدعوة قبل نشرها.");
+        var slug = Convert.ToHexString(RandomNumberGenerator.GetBytes(10)).ToLowerInvariant();
+        ThrowLifecycleFailure(await repository.PublishAsync(invitationId, slug, now, expiresAt, mediaDeleteAt, cancellationToken));
+    }
+
+    public async Task PauseAsync(int invitationId, CancellationToken cancellationToken = default) =>
+        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Pause", DateTimeOffset.UtcNow, cancellationToken));
+    public async Task ReactivateAsync(int invitationId, CancellationToken cancellationToken = default) =>
+        ThrowLifecycleFailure(await repository.SetPublicationStateAsync(invitationId, "Reactivate", DateTimeOffset.UtcNow, cancellationToken));
+    public async Task ExtendAsync(int invitationId, CancellationToken cancellationToken = default) =>
+        ThrowLifecycleFailure(await repository.ExtendAsync(invitationId, DateTimeOffset.UtcNow, cancellationToken));
+
+    public async Task<PublicInvitationData> GetPublicAsync(string slug, CancellationToken cancellationToken = default) =>
+        await repository.GetPublicAsync(slug, DateTimeOffset.UtcNow, cancellationToken)
+            ?? throw new InvitationNotFoundException();
+
+    public Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int mediaId, CancellationToken cancellationToken = default) =>
+        repository.GetPublicMediaAsync(slug, mediaId, DateTimeOffset.UtcNow, cancellationToken);
+
+    public Task<InvitationCardData?> GetFinalPngAsync(int invitationId, CancellationToken cancellationToken = default) =>
+        repository.GetFinalPngAsync(invitationId, cancellationToken);
+    public Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken cancellationToken = default) =>
+        repository.GetPublicFinalPngAsync(slug, cancellationToken);
+
+    public async Task SetFinalPngAsync(int invitationId, string storageKey, CancellationToken cancellationToken = default) =>
+        ThrowLifecycleFailure(await repository.SetFinalPngAsync(invitationId, storageKey, DateTimeOffset.UtcNow, cancellationToken));
+
+    private static void ThrowLifecycleFailure(InvitationLifecycleFailure failure)
+    {
+        switch (failure)
+        {
+            case InvitationLifecycleFailure.None: return;
+            case InvitationLifecycleFailure.NotFound: throw new InvitationNotFoundException();
+            case InvitationLifecycleFailure.NotApproved: throw new InvitationValidationException("لا يمكن نشر الدعوة قبل موافقة العميل.");
+            case InvitationLifecycleFailure.MissingWeddingDate: throw new InvitationValidationException("موعد الزفاف مطلوب للنشر.");
+            case InvitationLifecycleFailure.Expired: throw new InvitationValidationException("انتهت صلاحية الدعوة ولا يمكن إعادة تفعيلها.");
+            case InvitationLifecycleFailure.SlugConflict: throw new InvitationValidationException("تعذر إنشاء رابط فريد للدعوة؛ حاول النشر مرة أخرى.");
+            default: throw new InvitationValidationException("حالة الدعوة لا تسمح بهذا الإجراء.");
+        }
+    }
 
     public async Task<InvitationMediaContentData?> GetPreviewMediaAsync(string token, int mediaId, CancellationToken cancellationToken = default)
     {

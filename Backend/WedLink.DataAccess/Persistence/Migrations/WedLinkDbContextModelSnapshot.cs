@@ -201,6 +201,137 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Guests.GuestMessage", b =>
+                {
+                    b.Property<int>("GuestMessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GuestMessageId"));
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeletedByAdminUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("GuestName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("InvitationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("GuestMessageId");
+
+                    b.HasIndex("DeletedByAdminUserId");
+
+                    b.HasIndex("InvitationId", "SubmittedAt");
+
+                    b.ToTable("GuestMessages", (string)null);
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Guests.MusicTrack", b =>
+                {
+                    b.Property<int>("MusicTrackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MusicTrackId"));
+
+                    b.Property<string>("Artist")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RightsReference")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("MusicTrackId");
+
+                    b.HasIndex("IsActive", "Title");
+
+                    b.ToTable("MusicTracks", (string)null);
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Guests.RsvpResponse", b =>
+                {
+                    b.Property<int>("RsvpResponseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RsvpResponseId"));
+
+                    b.Property<int>("AccompanyingPeople")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EditTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("GuestName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("InvitationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Response")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("RsvpResponseId");
+
+                    b.HasIndex("InvitationId", "EditTokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("InvitationId", "SubmittedAt");
+
+                    b.ToTable("RsvpResponses", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RsvpResponses_AccompanyingPeople", "[AccompanyingPeople] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Identity.AdminUser", b =>
                 {
                     b.Property<string>("Id")
@@ -310,6 +441,9 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.Property<DateTimeOffset?>("MediaDeleteAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int?>("MusicTrackId")
+                        .HasColumnType("int");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
@@ -352,6 +486,8 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("InvitationId");
+
+                    b.HasIndex("MusicTrackId");
 
                     b.HasIndex("OrderId")
                         .IsUnique();
@@ -1210,8 +1346,36 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Guests.GuestMessage", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedByAdminUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("WedLink.DataAccess.Invitations.Invitation", null)
+                        .WithMany()
+                        .HasForeignKey("InvitationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WedLink.DataAccess.Guests.RsvpResponse", b =>
+                {
+                    b.HasOne("WedLink.DataAccess.Invitations.Invitation", null)
+                        .WithMany()
+                        .HasForeignKey("InvitationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Invitations.Invitation", b =>
                 {
+                    b.HasOne("WedLink.DataAccess.Guests.MusicTrack", null)
+                        .WithMany()
+                        .HasForeignKey("MusicTrackId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("WedLink.DataAccess.Orders.Order", null)
                         .WithOne()
                         .HasForeignKey("WedLink.DataAccess.Invitations.Invitation", "OrderId")

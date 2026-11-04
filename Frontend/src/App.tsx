@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAdmin } from './features/auth/RequireAdmin'
 import { AdminUsersPage } from './features/auth/AdminUsersPage'
@@ -7,6 +7,8 @@ import { TemplatesPage } from './features/templates/TemplatesPage'
 import { OrdersPage } from './features/orders/OrdersPage'
 import { CustomerSubmissionPage } from './features/customer-submission/CustomerSubmissionPage'
 import { InvitationPreviewPage } from './features/invitations/InvitationPreviewPage'
+import { PublicInvitationPage } from './features/invitations/PublicInvitationPage'
+import { MusicLibraryPage } from './features/music/MusicLibraryPage'
 import './App.css'
 
 function PageCard({ title, description }: { title: string; description: string }) {
@@ -28,19 +30,9 @@ function AdminPage() {
       <Link className="dashboard-link" to="/admin/customers">إدارة العملاء</Link>
       <Link className="dashboard-link" to="/admin/orders">إدارة الطلبات والمدفوعات</Link>
       <Link className="dashboard-link" to="/admin/templates">إدارة القوالب والإضافات</Link>
+      <Link className="dashboard-link" to="/admin/music">مكتبة الموسيقى</Link>
       <Link className="dashboard-link" to="/admin/users">إدارة حسابات الإدارة</Link>
     </section>
-  )
-}
-
-function PublicInvitationPage() {
-  const { slug } = useParams()
-
-  return (
-    <PageCard
-      title="صفحة الدعوة"
-      description={`مسار الدعوة العامة جاهز. رمز الدعوة الحالي: ${slug ?? ''}`}
-    />
   )
 }
 
@@ -54,9 +46,11 @@ function NotFoundPage() {
 }
 
 function App() {
+  const location = useLocation()
+  const isPublicInvitation = location.pathname.startsWith('/invite/')
   return (
     <div className="app-shell">
-      <header className="site-header">
+      {!isPublicInvitation && <header className="site-header">
         <Link className="site-brand" to="/admin">
           WedLink
         </Link>
@@ -64,7 +58,7 @@ function App() {
           <Link to="/">الرئيسية</Link>
           <Link to="/admin">لوحة الإدارة</Link>
         </nav>
-      </header>
+      </header>}
 
       <main className="page-content">
         <Routes>
@@ -75,6 +69,7 @@ function App() {
           <Route element={<RequireAdmin><OrdersPage /></RequireAdmin>} path="/admin/orders" />
           <Route element={<RequireAdmin><TemplatesPage /></RequireAdmin>} path="/admin/templates" />
           <Route element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} path="/admin/users" />
+          <Route element={<RequireAdmin><MusicLibraryPage /></RequireAdmin>} path="/admin/music" />
           <Route element={<PublicInvitationPage />} path="/invite/:slug" />
           <Route element={<CustomerSubmissionPage />} path="/submit" />
           <Route element={<InvitationPreviewPage />} path="/preview" />

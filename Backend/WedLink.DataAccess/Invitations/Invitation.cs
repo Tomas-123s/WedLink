@@ -5,6 +5,7 @@ public class Invitation
     public int InvitationId { get; set; }
     public int OrderId { get; set; }
     public int TemplateVersionId { get; set; }
+    public int? MusicTrackId { get; set; }
     public string Slug { get; set; } = string.Empty;
     public string Status { get; set; } = "Draft";
     public DateTime? WeddingDateTimeLocal { get; set; }

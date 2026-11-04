@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WedLink.DataAccess.Invitations;
 using WedLink.DataAccess.Orders;
 using WedLink.DataAccess.Templates;
+using WedLink.DataAccess.Guests;
 
 namespace WedLink.DataAccess.Persistence.Configurations.Invitations;
 
@@ -26,5 +27,6 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.HasIndex(item => new { item.Status, item.ExpiresAt });
         builder.HasOne<Order>().WithOne().HasForeignKey<Invitation>(item => item.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<TemplateVersion>().WithMany().HasForeignKey(item => item.TemplateVersionId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<MusicTrack>().WithMany().HasForeignKey(item => item.MusicTrackId).OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -189,6 +189,7 @@ erDiagram
         int InvitationId PK
         int OrderId FK
         int TemplateVersionId FK
+        int MusicTrackId FK "Optional"
         string Slug
         string Status
         datetime WeddingDateTimeLocal
@@ -230,7 +231,9 @@ erDiagram
         int MusicTrackId PK
         string Title
         string Artist "Optional"
+        string RightsReference
         string StorageKey
+        string ContentType
         bool IsActive
         datetime CreatedAt
     }
@@ -241,7 +244,7 @@ erDiagram
         string Response
         string GuestName "Optional"
         int AccompanyingPeople
-        string EditTokenHash "Optional"
+        string EditTokenHash "Required; hash only"
         datetime SubmittedAt
         datetime UpdatedAt "Optional"
     }
@@ -263,6 +266,7 @@ erDiagram
         string Message
         datetime SubmittedAt
         datetime DeletedAt "Optional"
+        string DeletedByAdminUserId FK "Optional"
     }
 
     ADMIN_USER {

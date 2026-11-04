@@ -25,22 +25,23 @@ public sealed record InvitationMediaResponse(int MediaId, string MediaType, stri
 public sealed record PreviewReviewEventResponse(int EventId, string Source, string Action, string? Comment, string? AdminUserId, DateTimeOffset CreatedAt);
 
 public sealed record InvitationResponse(
-    int OrderId, int? InvitationId, int TemplateVersionId, string TemplateName, string TemplateVersionNumber,
+    int OrderId, int? InvitationId, int TemplateVersionId, int? MusicTrackId, string TemplateName, string TemplateVersionNumber,
     string BrideName, string GroomName, DateTime? WeddingDateTimeLocal, string TimeZoneId,
     string? VenueName, string? VenueAddress, string? LocationUrl, JsonElement? Customizations,
-    string Status, DateTimeOffset? UpdatedAt, IReadOnlyList<InvitationFeatureResponse> Features,
+    string Status, string Slug, DateTimeOffset? PublishedAt, DateTimeOffset? ExpiresAt, DateTimeOffset? PausedAt,
+    DateTimeOffset? UpdatedAt, bool HasFinalPng, IReadOnlyList<InvitationFeatureResponse> Features,
     IReadOnlyList<InvitationMediaResponse> AvailableMedia, IReadOnlyList<int> SelectedMediaIds,
     IReadOnlyList<PreviewReviewEventResponse> ReviewEvents)
 {
     public static InvitationResponse FromData(InvitationData item) => new(item.OrderId, item.InvitationId,
-        item.TemplateVersionId, item.TemplateName, item.TemplateVersionNumber, item.BrideName, item.GroomName,
+        item.TemplateVersionId, item.MusicTrackId, item.TemplateName, item.TemplateVersionNumber, item.BrideName, item.GroomName,
         item.WeddingDateTimeLocal, item.TimeZoneId, item.VenueName, item.VenueAddress, item.LocationUrl,
-        Parse(item.CustomizationsJson), item.Status, item.UpdatedAt,
+        ParseCustomizations(item.CustomizationsJson), item.Status, item.Slug, item.PublishedAt, item.ExpiresAt, item.PausedAt, item.UpdatedAt, item.HasFinalPng,
         item.Features.Select(feature => new InvitationFeatureResponse(feature.Key, feature.Name, feature.IsEnabled, feature.MaximumCount, feature.MaximumFileSizeMb)).ToArray(),
         item.AvailableMedia.Select(InvitationContractMapping.FromData).ToArray(), item.SelectedMediaIds,
         item.ReviewEvents.Select(InvitationContractMapping.FromData).ToArray());
 
-    private static JsonElement? Parse(string? json)
+    internal static JsonElement? ParseCustomizations(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         using var document = JsonDocument.Parse(json);
@@ -69,6 +70,18 @@ public sealed record PreviewInvitationResponse(string TemplateName, string Templ
 
 public sealed record CreatePreviewLinkResponse(string PreviewUrl, DateTimeOffset ExpiresAt);
 public sealed record PreviewReviewRequest([Required] string Action, [StringLength(2000)] string? Comment);
+public sealed record PublicInvitationMediaResponse(int MediaId, string MediaType, string OriginalFileName, string ContentType, string Url);
+public sealed record PublicInvitationResponse(bool EventEnded, bool HasFinalPng, string TemplateName, string BrideName, string GroomName,
+    DateTime? WeddingDateTimeLocal, string TimeZoneId, string? VenueName, string? VenueAddress, string? LocationUrl,
+    JsonElement? Customizations, IReadOnlyList<InvitationFeatureResponse> Features, IReadOnlyList<PublicInvitationMediaResponse> Media)
+{
+    public static PublicInvitationResponse FromData(PublicInvitationData item, string slug) => new(item.EventEnded, item.HasFinalPng,
+        item.TemplateName, item.BrideName, item.GroomName, item.WeddingDateTimeLocal, item.TimeZoneId, item.VenueName,
+        item.VenueAddress, item.LocationUrl, InvitationResponse.ParseCustomizations(item.CustomizationsJson),
+        item.Features.Select(feature => new InvitationFeatureResponse(feature.Key, feature.Name, feature.IsEnabled, feature.MaximumCount, feature.MaximumFileSizeMb)).ToArray(),
+        item.Media.Select(media => new PublicInvitationMediaResponse(media.MediaId, media.MediaType, media.OriginalFileName,
+            media.ContentType, $"/api/v1/public/invitations/{Uri.EscapeDataString(slug)}/media/{media.MediaId}")).ToArray());
+}
 
 internal static class InvitationContractMapping
 {

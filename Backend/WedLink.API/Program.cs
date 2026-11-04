@@ -17,6 +17,8 @@ using WedLink.DataAccess.Invitations;
 using WedLink.Business.Invitations;
 using System.Threading.RateLimiting;
 using WedLink.API.Filters;
+using WedLink.Business.Guests;
+using WedLink.DataAccess.Guests;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,8 @@ builder.Services.AddSingleton<IPrivateLinkTokenGenerator, PrivateLinkTokenGenera
 builder.Services.AddScoped<CustomerSubmissionService>();
 builder.Services.AddScoped<IInvitationRepository, EfInvitationRepository>();
 builder.Services.AddScoped<InvitationService>();
+builder.Services.AddScoped<IGuestRepository, EfGuestRepository>();
+builder.Services.AddScoped<GuestService>();
 builder.Services.AddSingleton<ISubmissionFileStorage>(_ => new LocalSubmissionFileStorage(
     builder.Environment.ContentRootPath,
     builder.Configuration["Storage:CustomerSubmissionPath"]));
@@ -85,6 +89,21 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
+    options.AddPolicy("public-invitation", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("guest-rsvp", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 8, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
+    options.AddPolicy("guest-messages", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
 });
 
 builder.Services

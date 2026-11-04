@@ -28,6 +28,7 @@ export interface InvitationDraft {
   orderId: number
   invitationId: number | null
   templateVersionId: number
+  musicTrackId: number | null
   templateName: string
   templateVersionNumber: string
   brideName: string
@@ -39,6 +40,11 @@ export interface InvitationDraft {
   locationUrl: string | null
   customizations: Record<string, unknown> | null
   status: string
+  slug: string
+  publishedAt: string | null
+  expiresAt: string | null
+  pausedAt: string | null
+  hasFinalPng: boolean
   updatedAt: string | null
   features: InvitationFeature[]
   availableMedia: InvitationMedia[]
@@ -59,6 +65,61 @@ export interface PreviewInvitation {
   customizations: Record<string, unknown> | null
   features: InvitationFeature[]
   media: InvitationMedia[]
+}
+
+export interface PublicInvitation {
+  eventEnded: boolean
+  hasFinalPng: boolean
+  templateName: string
+  brideName: string
+  groomName: string
+  weddingDateTimeLocal: string | null
+  timeZoneId: string
+  venueName: string | null
+  venueAddress: string | null
+  locationUrl: string | null
+  customizations: Record<string, unknown> | null
+  features: InvitationFeature[]
+  media: Array<InvitationMedia & { url: string }>
+}
+
+export interface GuestInteractions {
+  rsvpEnabled: boolean
+  maximumAccompanyingPeople: number | null
+  guestCountEnabled: boolean
+  expectedAttendance: number
+  messagesEnabled: boolean
+  messages: Array<{ guestMessageId: number; guestName: string | null; message: string; submittedAt: string }>
+  musicEnabled: boolean
+  musicTrack: { musicTrackId: number; title: string; artist: string | null } | null
+  musicUrl: string | null
+}
+
+export interface MusicTrack {
+  musicTrackId: number
+  title: string
+  artist: string | null
+  rightsReference: string
+  isActive: boolean
+}
+
+export function formatInvitationLocalDate(value: string, timeZone: string, options: Intl.DateTimeFormatOptions): string {
+  const local = value.replace(/Z$/, '').slice(0, 19)
+  const [datePart, timePart = '00:00:00'] = local.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hour, minute, second] = timePart.split(':').map(Number)
+  const wallClockUtc = Date.UTC(year, month - 1, day, hour, minute, second)
+  let instant = wallClockUtc
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(instant))
+    const part = (type: string) => Number(parts.find((item) => item.type === type)?.value)
+    const displayedUtc = Date.UTC(part('year'), part('month') - 1, part('day'), part('hour'), part('minute'), part('second'))
+    instant = wallClockUtc - (displayedUtc - instant)
+  }
+  return new Intl.DateTimeFormat('ar-EG', { ...options, timeZone }).format(new Date(instant))
 }
 
 const adminPath = '/api/v1/admin/orders'
@@ -105,6 +166,85 @@ export function saveInvitation(orderId: number, input: {
 
 export function createInvitationPreviewLink(orderId: number): Promise<{ previewUrl: string; expiresAt: string }> {
   return secureSend(`${adminPath}/${orderId}/invitation/preview-links`, 'POST')
+}
+
+export async function getPublicInvitation(slug: string): Promise<PublicInvitation> {
+  const response = await fetch(`/api/v1/public/invitations/${encodeURIComponent(slug)}`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json() as Promise<PublicInvitation>
+}
+
+export async function getGuestInteractions(slug: string): Promise<GuestInteractions> {
+  const response = await fetch(`/api/v1/public/invitations/${encodeURIComponent(slug)}/guest-interactions`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json() as Promise<GuestInteractions>
+}
+
+export async function submitRsvp(slug: string, input: { response: 'Yes' | 'No'; guestName: string; accompanyingPeople: number; editToken: string | null }) {
+  const response = await fetch(`/api/v1/public/invitations/${encodeURIComponent(slug)}/rsvps`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json() as Promise<{ editToken: string; expectedAttendance: number; isUpdate: boolean }>
+}
+
+export async function submitGuestMessage(slug: string, input: { guestName: string; message: string }) {
+  const response = await fetch(`/api/v1/public/invitations/${encodeURIComponent(slug)}/messages`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+}
+
+async function adminSend<T>(url: string, method: 'GET' | 'PUT' | 'DELETE', body?: unknown): Promise<T> {
+  if (method === 'GET') {
+    const response = await fetch(url, { credentials: 'include' })
+    if (!response.ok) throw new Error(await errorMessage(response))
+    return response.json() as Promise<T>
+  }
+  const csrfResponse = await fetch('/api/v1/admin/auth/csrf', { credentials: 'include' })
+  if (!csrfResponse.ok) throw new Error('تعذر تجهيز طلب آمن.')
+  const { token } = await csrfResponse.json() as { token: string }
+  const response = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }, body: body === undefined ? undefined : JSON.stringify(body) })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  if (response.status === 204) return undefined as T
+  return response.json() as Promise<T>
+}
+
+export function getAdminRsvps(invitationId: number) { return adminSend<{ yesCount: number; noCount: number; expectedAttendance: number; responses: Array<{ rsvpResponseId: number; response: string; guestName: string | null; accompanyingPeople: number; expectedAttendance: number; submittedAt: string }> }>(`/api/v1/admin/invitations/${invitationId}/rsvps`, 'GET') }
+export function getAdminGuestMessages(invitationId: number) { return adminSend<Array<{ guestMessageId: number; guestName: string | null; message: string; submittedAt: string; deletedAt: string | null }>>(`/api/v1/admin/invitations/${invitationId}/messages`, 'GET') }
+export function deleteAdminGuestMessage(invitationId: number, messageId: number) { return adminSend<void>(`/api/v1/admin/invitations/${invitationId}/messages/${messageId}`, 'DELETE') }
+export function getMusicTracks() { return adminSend<MusicTrack[]>('/api/v1/admin/music-tracks', 'GET') }
+export function updateMusicTrack(track: MusicTrack) { return adminSend<MusicTrack>(`/api/v1/admin/music-tracks/${track.musicTrackId}`, 'PUT', track) }
+export function selectInvitationMusic(invitationId: number, musicTrackId: number | null) { return adminSend<void>(`/api/v1/admin/invitations/${invitationId}/music`, 'PUT', { musicTrackId }) }
+
+export async function createMusicTrack(input: { title: string; artist: string; rightsReference: string; file: File }) {
+  const csrfResponse = await fetch('/api/v1/admin/auth/csrf', { credentials: 'include' })
+  if (!csrfResponse.ok) throw new Error('تعذر تجهيز طلب آمن.')
+  const { token } = await csrfResponse.json() as { token: string }
+  const body = new FormData(); body.set('title', input.title); body.set('artist', input.artist); body.set('rightsReference', input.rightsReference); body.set('file', input.file)
+  const response = await fetch('/api/v1/admin/music-tracks', { method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': token }, body })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json() as Promise<MusicTrack>
+}
+
+export function invitationAction(invitationId: number, action: 'publish' | 'pause' | 'reactivate' | 'extend'): Promise<void> {
+  return secureSend(`/api/v1/admin/invitations/${invitationId}/${action}`, 'POST')
+}
+
+export async function saveFinalInvitationCard(invitationId: number, blob: Blob): Promise<void> {
+  const csrfResponse = await fetch('/api/v1/admin/auth/csrf', { credentials: 'include' })
+  if (!csrfResponse.ok) throw new Error('تعذر تجهيز طلب آمن. حدّث الصفحة وحاول مرة أخرى.')
+  const { token } = await csrfResponse.json() as { token: string }
+  const form = new FormData()
+  form.append('file', blob, 'wedlink-invitation.png')
+  const response = await fetch(`/api/v1/admin/invitations/${invitationId}/final-card`, {
+    method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': token }, body: form,
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+}
+
+export function downloadFinalInvitationCard(invitationId: number): string {
+  return `/api/v1/admin/invitations/${invitationId}/final-card`
 }
 
 async function sendPrivate<T>(token: string, path: string, init?: RequestInit): Promise<T> {

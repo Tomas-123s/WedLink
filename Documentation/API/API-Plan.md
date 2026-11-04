@@ -97,6 +97,9 @@ These endpoints manage metadata and trusted code registrations, not arbitrary ex
 | POST | `/admin/invitations/{invitationId}/pause` | Temporarily pause a valid invitation |
 | POST | `/admin/invitations/{invitationId}/reactivate` | Reactivate a paused invitation before expiry |
 | POST | `/admin/invitations/{invitationId}/extend` | Extend a valid invitation before expiry |
+| POST | `/admin/invitations/{invitationId}/final-card` | Save the final PNG card once after customer approval |
+| GET | `/admin/invitations/{invitationId}/final-card` | Download the stored final PNG card |
+| PUT | `/admin/invitations/{invitationId}/music` | Select or clear an authorized active library track when supported |
 | GET | `/invitation-previews/current` | Read preview data using its private credential |
 | GET | `/invitation-previews/current/media/{mediaId}` | Read media attached to this preview only |
 | POST | `/invitation-previews/current/review` | Submit approval or a change request and append a review event |
@@ -108,8 +111,12 @@ The preview link is a 14-day bearer credential whose SHA-256 hash is stored in `
 | Method | Route | Purpose |
 |---|---|---|
 | GET | `/public/invitations/{slug}` | Get a published invitation or its event-ended representation |
+| GET | `/public/invitations/{slug}/media/{mediaId}` | Read media selected for this published invitation |
+| GET | `/public/invitations/{slug}/final-card` | Download its permanent PNG card, including after page expiry |
+| GET | `/public/invitations/{slug}/guest-interactions` | Return enabled guest features, public messages, attendance count when enabled, and selected music metadata |
 | POST | `/public/invitations/{slug}/rsvps` | Create an RSVP response or update one using the browser-held edit token |
 | POST | `/public/invitations/{slug}/messages` | Submit a congratulation message if enabled |
+| GET | `/public/invitations/{slug}/music` | Stream the selected active track for this published invitation |
 
 Public responses include only enabled template sections and guest-safe content. RSVP count means one responding guest plus additional companions for a Yes response; No contributes zero. Guest message visibility follows invitation settings.
 
@@ -120,6 +127,8 @@ Public responses include only enabled template sections and guest-safe content. 
 | GET | `/admin/invitations/{invitationId}/rsvps` | View RSVP responses and attendance summary |
 | GET | `/admin/invitations/{invitationId}/messages` | View guest messages |
 | DELETE | `/admin/invitations/{invitationId}/messages/{messageId}` | Remove an inappropriate message and record the action |
+
+Admin endpoints also include `GET /admin/music-tracks`, `POST /admin/music-tracks` (multipart MP3/M4A up to 20 MB with a recorded rights reference), and `PUT /admin/music-tracks/{trackId}`. Only active tracks can be selected for an invitation or streamed publicly.
 
 ### 8. Music and media
 
