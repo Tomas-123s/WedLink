@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { formatInvitationLocalDate, getGuestInteractions, getPublicInvitation, submitGuestMessage, submitRsvp, type GuestInteractions } from './invitationsApi'
+import { formatInvitationLocalDate, getGuestInteractions, getPublicInvitation, invitationLocalDateToEpoch, submitGuestMessage, submitRsvp, type GuestInteractions } from './invitationsApi'
+
+const countdownNumber = new Intl.NumberFormat('ar-EG', { minimumIntegerDigits: 2, useGrouping: false })
 
 function weddingDate(value: string | null, zone: string) {
   if (!value) return null
@@ -19,9 +21,11 @@ export function PublicInvitationPage() {
   const date = weddingDate(item.weddingDateTimeLocal, item.timeZoneId)
   const customizations = item.customizations ?? {}
   const enabledKeys = new Set(item.features.filter((feature) => feature.isEnabled).map((feature) => feature.key))
+  const countdownMessage = typeof customizations.countdown === 'string' ? customizations.countdown.trim() : ''
+  const publicCustomizations = Object.entries(customizations).filter(([key, value]) => key !== 'countdown' && enabledKeys.has(key) && String(value).trim())
   const share = async () => {
-    const url = window.location.href
-    if (navigator.share) await navigator.share({ title: `دعوة زفاف ${item.brideName} و${item.groomName}`, url })
+    const url = new URL(`/api/v1/public/invitations/${encodeURIComponent(slug)}/share`, window.location.origin).toString()
+    if (navigator.share) await navigator.share({ title: `دعوة زفاف ${item.brideName} و${item.groomName}`, text: 'شاركوا فرحتنا وافتحوا تفاصيل الدعوة', url })
     else await navigator.clipboard.writeText(url)
   }
 
@@ -39,13 +43,46 @@ export function PublicInvitationPage() {
       <button className="primary-button" onClick={() => void share()} type="button">مشاركة الدعوة</button>
       {item.hasFinalPng && <a className="public-invitation-card-download" download href={`/api/v1/public/invitations/${encodeURIComponent(slug)}/final-card`}>تنزيل بطاقة الدعوة</a>}
     </section>
-    {enabledKeys.size > 0 && Object.entries(customizations).filter(([key, value]) => enabledKeys.has(key) && String(value).trim()).length > 0 && <section className="public-invitation-section"><h2>تفاصيل إضافية</h2><dl className="public-invitation-details">{Object.entries(customizations).filter(([key, value]) => enabledKeys.has(key) && String(value).trim()).map(([key, value]) => <div key={key}><dt>{item.features.find((feature) => feature.key === key)?.name ?? key}</dt><dd>{String(value)}</dd></div>)}</dl></section>}
+    {enabledKeys.has('countdown') && item.weddingDateTimeLocal && <InvitationCountdown dateTime={item.weddingDateTimeLocal} timeZone={item.timeZoneId} postEventMessage={countdownMessage} />}
+    {publicCustomizations.length > 0 && <section className="public-invitation-section"><h2>تفاصيل إضافية</h2><dl className="public-invitation-details">{publicCustomizations.map(([key, value]) => <div key={key}><dt>{item.features.find((feature) => feature.key === key)?.name ?? key}</dt><dd>{String(value)}</dd></div>)}</dl></section>}
     {item.media.some((media) => media.mediaType === 'Image') && <section className="public-invitation-section"><h2>لحظاتنا</h2><div className="public-invitation-gallery">{item.media.filter((media) => media.mediaType === 'Image' && enabledKeys.has('gallery')).map((media) => <img key={media.mediaId} alt="صورة من الدعوة" loading="lazy" src={media.url} />)}</div></section>}
     {item.media.filter((media) => media.mediaType === 'Video' && enabledKeys.has('video')).map((media) => <section className="public-invitation-section" key={media.mediaId}><video controls playsInline preload="metadata" src={media.url} /></section>)}
     {item.media.filter((media) => media.mediaType === 'Audio' && enabledKeys.has('music')).map((media) => <section className="public-invitation-section" key={media.mediaId}><audio controls preload="none" src={media.url} /></section>)}
     {guests.data && <GuestInteractionsPanel slug={slug} data={guests.data} />}
     <footer className="public-invitation-footer">بكل الحب، ننتظر حضوركم ومشاركتكم فرحتنا</footer>
   </article>
+}
+
+function InvitationCountdown({ dateTime, timeZone, postEventMessage }: { dateTime: string; timeZone: string; postEventMessage: string }) {
+  const eventTime = invitationLocalDateToEpoch(dateTime, timeZone)
+  const [now, setNow] = useState(() => Date.now())
+  const hasEnded = eventTime !== null && now >= eventTime
+
+  useEffect(() => {
+    if (eventTime === null || hasEnded) return
+    const interval = window.setInterval(() => {
+      const currentTime = Date.now()
+      setNow(currentTime)
+      if (currentTime >= eventTime) window.clearInterval(interval)
+    }, 1000)
+    return () => window.clearInterval(interval)
+  }, [eventTime, hasEnded])
+
+  if (eventTime === null) return null
+  if (hasEnded) {
+    return <section className="public-invitation-section invitation-countdown invitation-countdown--ended"><h2>موعدنا السعيد</h2><p>{postEventMessage || 'تمّ الزفاف، ونشكركم على مشاركتكم فرحتنا.'}</p></section>
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((eventTime - now) / 1000))
+  const parts = [
+    { value: Math.floor(remainingSeconds / 86400), label: 'أيام' },
+    { value: Math.floor((remainingSeconds % 86400) / 3600), label: 'ساعات' },
+    { value: Math.floor((remainingSeconds % 3600) / 60), label: 'دقائق' },
+    { value: remainingSeconds % 60, label: 'ثوانٍ' },
+  ]
+  return <section className="public-invitation-section invitation-countdown" aria-label="الوقت المتبقي حتى موعد الزفاف" role="timer" aria-live="off">
+    <h2>نعدّ الأيام للقائكم</h2><div className="invitation-countdown__parts">{parts.map((part) => <div key={part.label}><strong>{countdownNumber.format(part.value)}</strong><span>{part.label}</span></div>)}</div>
+  </section>
 }
 
 function GuestInteractionsPanel({ slug, data }: { slug: string; data: GuestInteractions }) {

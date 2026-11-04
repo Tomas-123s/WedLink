@@ -779,6 +779,12 @@
 .public-invitation-map, .public-invitation-card-download { color: #71495b; font-weight: 700; }
 .public-invitation-section { padding: 24px; border: 1px solid #eee8e4; border-radius: 16px; background: #fff; }
 .public-invitation-section h2 { margin: 0 0 16px; color: #71495b; }
+.invitation-countdown { text-align: center; }
+.invitation-countdown__parts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.invitation-countdown__parts div { display: grid; gap: 6px; padding: 16px 10px; border-radius: 12px; background: #fcfaf9; }
+.invitation-countdown__parts strong { color: #71495b; font-size: clamp(24px, 5vw, 38px); font-variant-numeric: tabular-nums; }
+.invitation-countdown__parts span, .invitation-countdown--ended p { color: #6a5c62; }
+.invitation-countdown--ended p { margin: 0; line-height: 1.8; }
 .public-invitation-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 0; }
 .public-invitation-details div { padding: 14px; border-radius: 10px; background: #fcfaf9; }
 .public-invitation-details dt { color: #776971; font-size: 13px; }
@@ -815,6 +821,7 @@
   .preview-gallery { grid-template-columns: 1fr; }
   .public-invitation-section { padding: 18px 14px; }
   .public-invitation-gallery { grid-template-columns: 1fr; }
+  .invitation-countdown__parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .music-library-layout { grid-template-columns: 1fr; }
   .guest-admin-list article { align-items: flex-start; flex-direction: column; }
 }

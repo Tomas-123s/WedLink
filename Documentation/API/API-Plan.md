@@ -111,6 +111,8 @@ The preview link is a 14-day bearer credential whose SHA-256 hash is stored in `
 | Method | Route | Purpose |
 |---|---|---|
 | GET | `/public/invitations/{slug}` | Get a published invitation or its event-ended representation |
+| GET | `/public/invitations/{slug}/share` | Return crawler-readable Open Graph/Twitter metadata and redirect guests to the invitation page |
+| GET | `/public/invitations/{slug}/share-image` | Return the public card/image while active; redirect expired invitations to the generic share image |
 | GET | `/public/invitations/{slug}/media/{mediaId}` | Read media selected for this published invitation |
 | GET | `/public/invitations/{slug}/final-card` | Download its permanent PNG card, including after page expiry |
 | GET | `/public/invitations/{slug}/guest-interactions` | Return enabled guest features, public messages, attendance count when enabled, and selected music metadata |
@@ -119,6 +121,8 @@ The preview link is a 14-day bearer credential whose SHA-256 hash is stored in `
 | GET | `/public/invitations/{slug}/music` | Stream the selected active track for this published invitation |
 
 Public responses include only enabled template sections and guest-safe content. RSVP count means one responding guest plus additional companions for a Yes response; No contributes zero. Guest message visibility follows invitation settings.
+
+The share page includes only public couple names while an invitation is active. Expired invitations use generic text and the generic WedLink image. The API requires `PublicSite:BaseUrl` to point to the frontend origin; the `/api` reverse proxy must keep that origin shared with the frontend. Metadata and share-image responses are marked no-store so a fresh crawler request rechecks invitation state. Social platforms may keep their own previews longer; use their preview refresh tools after changing a published card or invitation names.
 
 ### 7. RSVP and guest-message administration
 

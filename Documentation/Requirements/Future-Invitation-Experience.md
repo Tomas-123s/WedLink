@@ -32,9 +32,13 @@ Every public invitation must provide suitable social sharing metadata. When a gu
 - Metadata must work with common social-sharing crawlers, which may not execute the React application.
 - Account for social platforms caching link previews.
 
+The share action uses a same-origin HTML metadata route so crawlers receive Open Graph and Twitter card tags without executing React. Active invitations may show public couple names and a public invitation card or image. Expired invitations use generic title, description, and image, without couple names. The API avoids caching metadata so each crawler request checks the current invitation state; social platforms can retain previews longer, so published changes may require a platform preview refresh.
+
 ## 32. Optional countdown
 
 Countdown is an optional template feature. When enabled, it displays the remaining time until the wedding date and time and updates automatically using the actual event date, time, and time zone. After the event time passes, it stops and changes to a template-configurable post-event message. Countdown behavior is independent of invitation expiration.
+
+The current generic invitation editor accepts an optional post-event message in the enabled `countdown` customization; when it is blank, the public invitation shows a neutral default message. The shared countdown presentation is static and exposes timer semantics without announcing each second to assistive technology. Template-specific placement and styling remain dependent on the pending visual design workflow.
 
 ## 33. Final RSVP attendance rule
 

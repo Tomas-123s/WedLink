@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Text.Encodings.Web;
 using WedLink.API.Contracts.Invitations;
 using WedLink.Business.CustomerSubmissions;
 using WedLink.Business.Invitations;
@@ -9,7 +10,8 @@ namespace WedLink.API.Controllers;
 
 [ApiController]
 [Route("api/v1")]
-public sealed class InvitationsController(InvitationService invitations, ISubmissionFileStorage storage) : ControllerBase
+public sealed class InvitationsController(InvitationService invitations, ISubmissionFileStorage storage,
+    IConfiguration configuration) : ControllerBase
 {
     [Authorize(Roles = "SuperAdmin")]
     [HttpGet("admin/orders/{orderId:int}/invitation")]
@@ -84,6 +86,98 @@ public sealed class InvitationsController(InvitationService invitations, ISubmis
     {
         try { return Ok(PublicInvitationResponse.FromData(await invitations.GetPublicAsync(slug, cancellationToken), slug)); }
         catch (InvitationNotFoundException exception) { return NotFoundProblem(exception.Message); }
+    }
+
+    [AllowAnonymous]
+    [HttpGet("public/invitations/{slug}/share")]
+    [EnableRateLimiting("public-invitation")]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public async Task<IActionResult> GetSharePage(string slug, CancellationToken cancellationToken)
+    {
+        PublicInvitationData invitation;
+        try { invitation = await invitations.GetPublicAsync(slug, cancellationToken); }
+        catch (InvitationNotFoundException) { return NotFound(); }
+
+        var publicBaseUrl = configuration["PublicSite:BaseUrl"]?.TrimEnd('/');
+        if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri)
+            || baseUri.Scheme is not ("https" or "http")
+            || baseUri.AbsolutePath != "/" || !string.IsNullOrEmpty(baseUri.Query)
+            || !string.IsNullOrEmpty(baseUri.Fragment) || !string.IsNullOrEmpty(baseUri.UserInfo))
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "إعداد الموقع العام غير مكتمل",
+                detail: "اضبط PublicSite:BaseUrl على عنوان الواجهة العامة.");
+
+        var encodedSlug = Uri.EscapeDataString(slug);
+        var invitationUrl = new Uri(baseUri, $"/invite/{encodedSlug}").AbsoluteUri;
+        var hasPublicImage = invitation.HasFinalPng
+            || invitation.Media.Any(media => media.MediaType == "Image");
+        var shareImagePath = !invitation.EventEnded && hasPublicImage
+            ? $"/api/v1/public/invitations/{encodedSlug}/share-image"
+            : "/share-default.png";
+        var shareImageUrl = new Uri(baseUri, shareImagePath).AbsoluteUri;
+        var title = invitation.EventEnded
+            ? "دعوة زفاف | WedLink"
+            : $"دعوة زفاف {invitation.BrideName} و{invitation.GroomName}";
+        var description = invitation.EventEnded
+            ? "انتهى موعد هذه الدعوة. نتمنى للعروسين حياة مليئة بالفرح والسعادة."
+            : $"شاركونا فرحة زفاف {invitation.BrideName} و{invitation.GroomName}. افتحوا الدعوة لمعرفة التفاصيل وتأكيد الحضور.";
+
+        var html = $"""
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{HtmlEncoder.Default.Encode(title)}</title>
+<meta name="description" content="{HtmlEncoder.Default.Encode(description)}">
+<link rel="canonical" href="{HtmlEncoder.Default.Encode(invitationUrl)}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="WedLink">
+<meta property="og:locale" content="ar_EG"><meta property="og:title" content="{HtmlEncoder.Default.Encode(title)}">
+<meta property="og:description" content="{HtmlEncoder.Default.Encode(description)}">
+<meta property="og:url" content="{HtmlEncoder.Default.Encode(invitationUrl)}"><meta property="og:image" content="{HtmlEncoder.Default.Encode(shareImageUrl)}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{HtmlEncoder.Default.Encode(title)}">
+<meta name="twitter:description" content="{HtmlEncoder.Default.Encode(description)}"><meta name="twitter:image" content="{HtmlEncoder.Default.Encode(shareImageUrl)}">
+<meta http-equiv="refresh" content="0;url={HtmlEncoder.Default.Encode(invitationUrl)}"></head>
+<body><p>جارٍ فتح الدعوة… <a href="{HtmlEncoder.Default.Encode(invitationUrl)}">افتح الدعوة</a></p><script>location.replace({System.Text.Json.JsonSerializer.Serialize(invitationUrl)});</script></body></html>
+""";
+        return Content(html, "text/html; charset=utf-8");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("public/invitations/{slug}/share-image")]
+    [EnableRateLimiting("public-invitation")]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public async Task<IActionResult> GetShareImage(string slug, CancellationToken cancellationToken)
+    {
+        PublicInvitationData invitation;
+        try { invitation = await invitations.GetPublicAsync(slug, cancellationToken); }
+        catch (InvitationNotFoundException) { return NotFound(); }
+        if (invitation.EventEnded)
+        {
+            return RedirectToDefaultShareImage();
+        }
+
+        if (invitation.HasFinalPng)
+        {
+            var card = await invitations.GetPublicFinalPngAsync(slug, cancellationToken);
+            if (card is not null)
+            {
+                var cardStream = await storage.OpenReadAsync(card.StorageKey, cancellationToken);
+                if (cardStream is not null) return File(cardStream, card.ContentType);
+            }
+        }
+
+        var image = invitation.Media.FirstOrDefault(media => media.MediaType == "Image");
+        if (image is null) return RedirectToDefaultShareImage();
+        var mediaData = await invitations.GetPublicMediaAsync(slug, image.MediaId, cancellationToken);
+        if (mediaData is null) return RedirectToDefaultShareImage();
+        var stream = await storage.OpenReadAsync(mediaData.StorageKey, cancellationToken);
+        return stream is null ? RedirectToDefaultShareImage() : File(stream, mediaData.ContentType);
+    }
+
+    private IActionResult RedirectToDefaultShareImage()
+    {
+        var baseUrl = configuration["PublicSite:BaseUrl"]?.TrimEnd('/');
+        return Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
+            ? Redirect(new Uri(baseUri, "/share-default.png").AbsoluteUri)
+            : NotFound();
     }
 
     [AllowAnonymous]

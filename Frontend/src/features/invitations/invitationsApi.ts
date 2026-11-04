@@ -122,6 +122,42 @@ export function formatInvitationLocalDate(value: string, timeZone: string, optio
   return new Intl.DateTimeFormat('ar-EG', { ...options, timeZone }).format(new Date(instant))
 }
 
+export function invitationLocalDateToEpoch(value: string, timeZone: string): number | null {
+  const local = value.replace(/Z$/, '').slice(0, 19)
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(local)
+  if (!match) return null
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText = '0'] = match
+  const [year, month, day, hour, minute, second] = [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number)
+  const wallClockUtc = Date.UTC(year, month - 1, day, hour, minute, second)
+  if (new Date(wallClockUtc).getUTCFullYear() !== year
+    || new Date(wallClockUtc).getUTCMonth() !== month - 1
+    || new Date(wallClockUtc).getUTCDate() !== day
+    || hour > 23 || minute > 59 || second > 59) return null
+
+  try {
+    let instant = wallClockUtc
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    })
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const parts = formatter.formatToParts(new Date(instant))
+      const part = (type: string) => Number(parts.find((item) => item.type === type)?.value)
+      const displayedUtc = Date.UTC(part('year'), part('month') - 1, part('day'), part('hour'), part('minute'), part('second'))
+      const offset = displayedUtc - instant
+      if (offset === 0) break
+      instant = wallClockUtc - offset
+    }
+    const parts = formatter.formatToParts(new Date(instant))
+    const part = (type: string) => Number(parts.find((item) => item.type === type)?.value)
+    return Date.UTC(part('year'), part('month') - 1, part('day'), part('hour'), part('minute'), part('second')) === wallClockUtc
+      ? instant
+      : null
+  } catch {
+    return null
+  }
+}
+
 const adminPath = '/api/v1/admin/orders'
 
 async function errorMessage(response: Response): Promise<string> {

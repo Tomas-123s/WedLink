@@ -73,6 +73,7 @@ Test API integration cases use an isolated EF Core in-memory database. They do n
 - Keep API keys, passwords, and signing credentials in .NET User Secrets locally or the deployment secret store; do not paste them into source, logs, screenshots, or issue reports.
 - Apply EF migrations using the deployment process and create the first SuperAdmin through `WedLink.AdminSetup`.
 - Serve the API and frontend over HTTPS; the admin cookies require secure transport.
+- Set the API environment variable `PublicSite__BaseUrl` to the HTTPS frontend origin (for example, `https://wedlink.example`). Invitation sharing uses this same-origin URL for crawler metadata and links back to `/invite/{slug}`; keep the `/api` reverse proxy on that origin.
 - Configure persistent private media storage and a scheduled database backup with a tested restore procedure.
 - Review the [local setup and backup notes](Documentation/Database/LocalSetup.md) and environment limitations before production use.
 
