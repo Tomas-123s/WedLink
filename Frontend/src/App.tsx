@@ -6,6 +6,7 @@ import { CustomersPage } from './features/customers/CustomersPage'
 import { TemplatesPage } from './features/templates/TemplatesPage'
 import { OrdersPage } from './features/orders/OrdersPage'
 import { CustomerSubmissionPage } from './features/customer-submission/CustomerSubmissionPage'
+import { InvitationPreviewPage } from './features/invitations/InvitationPreviewPage'
 import './App.css'
 
 function PageCard({ title, description }: { title: string; description: string }) {
@@ -43,15 +44,6 @@ function PublicInvitationPage() {
   )
 }
 
-function PrivatePreviewPage() {
-  return (
-    <PageCard
-      title="معاينة خاصة"
-      description="هذا مسار معاينة العميل، وسيُربط بالدعوة لاحقًا."
-    />
-  )
-}
-
 function NotFoundPage() {
   return (
     <PageCard
@@ -85,7 +77,7 @@ function App() {
           <Route element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} path="/admin/users" />
           <Route element={<PublicInvitationPage />} path="/invite/:slug" />
           <Route element={<CustomerSubmissionPage />} path="/submit" />
-          <Route element={<PrivatePreviewPage />} path="/preview" />
+          <Route element={<InvitationPreviewPage />} path="/preview" />
           <Route element={<NotFoundPage />} path="*" />
         </Routes>
       </main>

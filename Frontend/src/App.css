@@ -740,3 +740,33 @@
 @media (max-width: 520px) {
   .order-filters { grid-template-columns: 1fr; }
 }
+
+.invitation-editor { margin-top: 20px; }
+.invitation-form h3 { margin: 16px 0 4px; }
+.invitation-form .checkbox-label { display: flex; align-items: center; gap: 10px; }
+.invitation-form .checkbox-label input { width: 16px; min-height: 16px; }
+.invitation-review-history { margin-top: 22px; padding-top: 16px; border-top: 1px solid #eee8e4; }
+.invitation-review-history article { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; padding: 12px 0; border-bottom: 1px solid #f0ebed; }
+.invitation-review-history time { color: #776971; font-size: 13px; }
+.invitation-review-history article p { grid-column: 1 / -1; margin: 0; color: #51474b; white-space: pre-wrap; }
+.preview-page { display: grid; gap: 20px; width: min(100%, 920px); margin: 0 auto; color: #30252a; }
+.preview-hero { display: grid; justify-items: center; gap: 10px; padding: clamp(36px, 8vw, 84px) 24px; border: 1px solid #e7d9df; border-radius: 20px; background: linear-gradient(145deg, #fff, #f5e9ee); text-align: center; }
+.preview-hero h1 { margin: 0; color: #71495b; font-size: clamp(32px, 7vw, 58px); }
+.preview-hero h2, .preview-hero p { margin: 0; }
+.preview-hero > a { margin-top: 8px; color: #71495b; }
+.preview-content { padding: 24px; border: 1px solid #eee8e4; border-radius: 14px; background: #fff; }
+.preview-content h2 { margin: 0 0 12px; color: #71495b; }
+.preview-customizations { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 0; }
+.preview-customizations div { padding: 12px; border-radius: 10px; background: #fcfaf9; }
+.preview-customizations dt { color: #776971; font-size: 13px; }
+.preview-customizations dd { margin: 5px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.preview-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.preview-media { min-width: 0; margin: 0; }
+.preview-media__image, .preview-media__player { display: block; width: 100%; max-height: 420px; border-radius: 10px; object-fit: contain; background: #f7f5f2; }
+.preview-media figcaption { padding-top: 7px; color: #776971; font-size: 13px; overflow-wrap: anywhere; }
+.preview-feedback > p { color: #6a5c62; }
+
+@media (max-width: 520px) {
+  .preview-content { padding: 18px 14px; }
+  .preview-gallery { grid-template-columns: 1fr; }
+}

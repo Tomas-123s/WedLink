@@ -31,12 +31,12 @@ This document records business decisions that affect implementation. Operational
 | BD-19 | Customer submission link | Submission links expire 14 days after creation. Rotating a link revokes all previous active submission links for the order. | Developer clarification, 2026-11-04 |
 | BD-20 | Customer upload limits | Allow JPEG, PNG, and WebP images up to 10 MB each; MP4 video up to 100 MB; MP3/M4A audio up to 20 MB; total active customer media is limited to 500 MB per order. | Developer clarification, 2026-11-04 |
 | BD-21 | File storage | Use local file storage for development behind a replaceable storage interface. Production provider selection is deferred. | Developer clarification, 2026-11-04 |
+| BD-22 | Invitation preview link | Preview links expire 14 days after creation. Creating a replacement revokes all previous active preview links for that order. | Developer clarification, 2026-11-04 |
 
 ## Decisions to revisit when implementation reaches them
 
 These are configuration or technical choices rather than unresolved business rules. They will be proposed with a clear rationale before the dependent task where appropriate:
 
-- Private preview link expiration defaults.
 - Backup and recovery handling for deleted media.
 - Admin role and permission breakdown.
 - Exact approval and change-request record fields.

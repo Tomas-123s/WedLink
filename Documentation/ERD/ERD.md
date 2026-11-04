@@ -161,7 +161,7 @@ erDiagram
         int OrderId FK "Unique"
         string BrideName
         string GroomName
-        datetime WeddingDateTimeLocal
+        datetime WeddingDateTimeLocal "Optional until submitted"
         string TimeZoneId
         string VenueName "Optional"
         string VenueAddress "Optional"
@@ -193,13 +193,13 @@ erDiagram
         string Status
         datetime WeddingDateTimeLocal
         string TimeZoneId
-        string CoupleNames
+        string CoupleNames "JSON array; supports Arabic names safely"
         string VenueName "Optional"
         string VenueAddress "Optional"
         string LocationUrl "Optional"
         datetime PublishedAt "Optional"
-        datetime ExpiresAt
-        datetime MediaDeleteAt
+        datetime ExpiresAt "Optional until publication"
+        datetime MediaDeleteAt "Optional until publication"
         datetime PausedAt "Optional"
         string FinalPngStorageKey "Optional"
         datetime CreatedAt
@@ -249,10 +249,11 @@ erDiagram
     PREVIEW_REVIEW_EVENT {
         int PreviewReviewEventId PK
         int InvitationId FK
-        string EventType
-        int PreviewVersion
-        string CustomerNote "Optional"
-        datetime OccurredAt
+        string Source
+        string Action
+        string Comment "Optional"
+        string AdminUserId FK "Optional"
+        datetime CreatedAt
     }
 
     GUEST_MESSAGE {

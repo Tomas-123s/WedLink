@@ -13,6 +13,8 @@ using WedLink.Business.Templates;
 using WedLink.Business.Orders;
 using WedLink.Business.CustomerSubmissions;
 using WedLink.DataAccess.Storage;
+using WedLink.DataAccess.Invitations;
+using WedLink.Business.Invitations;
 using System.Threading.RateLimiting;
 using WedLink.API.Filters;
 
@@ -45,6 +47,8 @@ builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ICustomerSubmissionRepository, EfCustomerSubmissionRepository>();
 builder.Services.AddSingleton<IPrivateLinkTokenGenerator, PrivateLinkTokenGenerator>();
 builder.Services.AddScoped<CustomerSubmissionService>();
+builder.Services.AddScoped<IInvitationRepository, EfInvitationRepository>();
+builder.Services.AddScoped<InvitationService>();
 builder.Services.AddSingleton<ISubmissionFileStorage>(_ => new LocalSubmissionFileStorage(
     builder.Environment.ContentRootPath,
     builder.Configuration["Storage:CustomerSubmissionPath"]));
@@ -68,6 +72,15 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("private-preview", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
             AutoReplenishment = true

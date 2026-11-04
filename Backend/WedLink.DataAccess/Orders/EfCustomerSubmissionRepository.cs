@@ -121,6 +121,10 @@ public sealed class EfCustomerSubmissionRepository(WedLinkDbContext db) : ICusto
         var item = await db.CustomerSubmissionMedia.FirstOrDefaultAsync(media => media.OrderId == orderId && media.CustomerSubmissionMediaId == mediaId && media.DeletedAt == null, cancellationToken);
         if (item is null) return null;
         var result = (ToMedia(item), item.StorageKey);
+        var invitationMedia = await db.InvitationMedia
+            .Where(media => media.StorageKey == item.StorageKey && media.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var media in invitationMedia) media.DeletedAt = deletedAt;
         item.DeletedAt = deletedAt;
         item.DeletedByAdminUserId = adminUserId;
         await db.SaveChangesAsync(cancellationToken);

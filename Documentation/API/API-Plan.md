@@ -90,18 +90,18 @@ These endpoints manage metadata and trusted code registrations, not arbitrary ex
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/admin/invitations` | Search/filter/paginate invitations |
-| GET | `/admin/invitations/{invitationId}` | View invitation, media, review events, and lifecycle dates |
-| PUT | `/admin/invitations/{invitationId}` | Edit invitation details and supported customizations |
-| POST | `/admin/invitations/{invitationId}/preview-links` | Create a private preview link |
+| GET | `/admin/orders/{orderId}/invitation` | View invitation draft, supported features, available media, and review events |
+| PUT | `/admin/orders/{orderId}/invitation` | Create or edit invitation details, supported customizations, and selected media |
+| POST | `/admin/orders/{orderId}/invitation/preview-links` | Create a private 14-day preview link and revoke its predecessor |
 | POST | `/admin/invitations/{invitationId}/publish` | Publish an approved invitation |
 | POST | `/admin/invitations/{invitationId}/pause` | Temporarily pause a valid invitation |
 | POST | `/admin/invitations/{invitationId}/reactivate` | Reactivate a paused invitation before expiry |
 | POST | `/admin/invitations/{invitationId}/extend` | Extend a valid invitation before expiry |
-| GET | `/previews/current` | Read preview data using its private credential |
-| POST | `/previews/current/reviews` | Submit approval or a change request and append a review event |
+| GET | `/invitation-previews/current` | Read preview data using its private credential |
+| GET | `/invitation-previews/current/media/{mediaId}` | Read media attached to this preview only |
+| POST | `/invitation-previews/current/review` | Submit approval or a change request and append a review event |
 
-The backend enforces that a preview is private, the invitation is not public before publication, and an expired invitation cannot be republished or reactivated.
+The preview link is a 14-day bearer credential whose SHA-256 hash is stored in `PrivateLinkTokens` with a distinct purpose. Its raw value appears only in the URL fragment, is removed from the address bar before requests, and is sent in the `Authorization` header. Creating a replacement revokes the prior preview link. The backend enforces that a preview is private, the invitation is not public before publication, and an expired or revoked credential is rejected.
 
 ### 6. Public invitation and guest actions
 

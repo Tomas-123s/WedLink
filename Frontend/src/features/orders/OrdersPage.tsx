@@ -16,6 +16,7 @@ import {
   revokeSubmissionLink,
   type OrderSummary,
 } from './ordersApi'
+import { InvitationEditor } from '../invitations/InvitationEditor'
 
 const money = (amount: number, currency = 'EGP') => new Intl.NumberFormat('ar-EG', {
   style: 'currency', currency, maximumFractionDigits: 2,
@@ -196,6 +197,7 @@ export function OrdersPage() {
           </>}
         </section>
       </section>}
+      {selectedOrder && <InvitationEditor key={selectedOrder.orderId} orderId={selectedOrder.orderId} />}
     </section>
   )
 }
