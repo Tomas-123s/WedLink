@@ -7,9 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://localhost:7270',
+        target: 'https://wedlink-api.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
