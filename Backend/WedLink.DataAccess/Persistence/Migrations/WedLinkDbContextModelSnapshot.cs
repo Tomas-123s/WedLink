@@ -1101,6 +1101,21 @@ namespace WedLink.DataAccess.Persistence.Migrations
                     b.ToTable("PrivateLinkTokens", (string)null);
                 });
 
+            modelBuilder.Entity("WedLink.DataAccess.Storage.StoredMediaFile", b =>
+                {
+                    b.Property<string>("StorageKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("StorageKey");
+
+                    b.ToTable("StoredMediaFiles", (string)null);
+                });
+
             modelBuilder.Entity("WedLink.DataAccess.Templates.AddOn", b =>
                 {
                     b.Property<int>("AddOnId")

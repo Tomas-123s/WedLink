@@ -8,5 +8,7 @@ services:
     dockerContext: .
     healthCheckPath: /api/v1/health
     envVars:
+      # Set this in Render's dashboard to MonsterASP's Remote connection string.
+      # The API runs on Render, so localhost and MonsterASP's Local string won't work.
       - key: ConnectionStrings__WedLinkDb
         sync: false

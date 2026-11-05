@@ -11,6 +11,7 @@ using WedLink.DataAccess.Templates;
 using WedLink.DataAccess.Guests;
 using WedLink.DataAccess.Persistence.Configurations.Guests;
 using WedLink.DataAccess.Audit;
+using WedLink.DataAccess.Storage;
 
 namespace WedLink.DataAccess.Persistence;
 
@@ -39,6 +40,7 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
     public DbSet<AddOn> AddOns => Set<AddOn>();
     public DbSet<TemplateAddOn> TemplateAddOns => Set<TemplateAddOn>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<StoredMediaFile> StoredMediaFiles => Set<StoredMediaFile>();
 
     public WedLinkDbContext(DbContextOptions<WedLinkDbContext> options)
         : base(options)
@@ -72,5 +74,6 @@ public class WedLinkDbContext : IdentityDbContext<AdminUser>
         modelBuilder.ApplyConfiguration(new AddOnConfiguration());
         modelBuilder.ApplyConfiguration(new TemplateAddOnConfiguration());
         modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
+        modelBuilder.ApplyConfiguration(new StoredMediaFileConfiguration());
     }
 }

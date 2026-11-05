@@ -55,7 +55,9 @@ OpenAPI أثناء التطوير: `https://localhost:7270/openapi/v1.json`
 
 Invitation validity defaults to two calendar months after the wedding. Set `InvitationLifecycle:DefaultValidityMonths` (1–24) to change the period for new publications; existing invitations keep their stored expiry. The expiration worker checks every five minutes by default. Configure `InvitationLifecycle:ExpirationIntervalMinutes` (1–1440) to change that interval. Temporary media is deleted three months after the wedding; its worker checks every 60 minutes by default, configurable with `InvitationLifecycle:MediaCleanupIntervalMinutes` (1–1440). The database retains deleted-media metadata; the application does not keep a recovery copy.
 
-تُحفظ ملفات التقديم الخاصة محليًا خارج `wwwroot` في `Backend/WedLink.API/PrivateMedia` افتراضيًا، ولا يمكن فتحها كرابط عام. يمكن تغيير المسار بإعداد `Storage:CustomerSubmissionPath`. قاعدة البيانات تحفظ البيانات الوصفية ومفتاح التخزين فقط. مزود الإنتاج لم يُحدد بعد.
+تُحفظ ملفات التقديم والصور والموسيقى في جدول `StoredMediaFiles` بقاعدة البيانات، بينما تحتفظ جداول الوسائط بالبيانات الوصفية ومفتاح التخزين. يتطلب النشر تطبيق migration `StoreMediaInDatabase` قبل استخدام تخزين الملفات الجديد. الملفات القديمة المحفوظة على نظام الملفات لا تُنقل تلقائيًا، والملفات المفقودة تحتاج إلى رفعها مجددًا.
+
+في الإنتاج، يقرأ الـAPI قاعدة البيانات من متغير Render السري `ConnectionStrings__WedLinkDb`. لا يحتوي المستودع على بيانات اتصال MonsterASP. اربط هذا المتغير بسلسلة **Remote** من MonsterASP (مع `Encrypt=True`) لأن الـAPI يعمل على Render؛ فعّل Remote access في MonsterASP، واستخدم اسم المضيف العام. بعد توجيه الاتصال إلى قاعدة MonsterASP، طبّق عليها الترحيلات قبل استقبال الملفات. لا تضع كلمة المرور في ملفات المشروع أو Git.
 
 ## تشغيل الاختبارات
 

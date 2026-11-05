@@ -93,9 +93,7 @@ builder.Services.AddScoped<IAdminDashboardRepository, EfAdminDashboardRepository
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<IAuditLogRepository, EfAuditLogRepository>();
 builder.Services.AddScoped<AuditLogService>();
-builder.Services.AddSingleton<ISubmissionFileStorage>(_ => new LocalSubmissionFileStorage(
-    builder.Environment.ContentRootPath,
-    builder.Configuration["Storage:CustomerSubmissionPath"]));
+builder.Services.AddScoped<ISubmissionFileStorage, DatabaseSubmissionFileStorage>();
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
     options.MultipartBodyLengthLimit = 110L * 1024 * 1024);
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 110L * 1024 * 1024);
