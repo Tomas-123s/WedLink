@@ -83,6 +83,10 @@ invitationLifecycleSettings.Validate();
 builder.Services.AddSingleton(invitationLifecycleSettings);
 builder.Services.AddHostedService<InvitationExpirationWorker>();
 builder.Services.AddHostedService<MediaRetentionWorker>();
+if (builder.Environment.IsProduction())
+{
+    builder.Services.AddHostedService<EditorialLuxuryTemplateSeedWorker>();
+}
 builder.Services.AddScoped<IGuestRepository, EfGuestRepository>();
 builder.Services.AddScoped<GuestService>();
 builder.Services.AddScoped<IAdminDashboardRepository, EfAdminDashboardRepository>();
