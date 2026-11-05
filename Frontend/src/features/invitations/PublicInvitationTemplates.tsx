@@ -158,7 +158,7 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
     <section className="editorial-luxury-introduction editorial-luxury-reveal" data-reveal id="invitation-introduction">
       <FloralMark className="editorial-luxury-section-flower" />
       <p className="el-label">حكاية قلبين</p>
-      <h2>بداية عمرٍ<br /><em>من المودة والرحمة</em></h2>
+      <h2>بداية عمرٍ<br /><em>من الحب والمودة</em></h2>
       <p>يسعدنا أن تشاركونا لحظة ننتظرها بكل الحب.</p>
       <span className="editorial-luxury-rule" aria-hidden="true" />
     </section>
