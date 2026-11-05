@@ -35,6 +35,8 @@ Health endpoint: `https://localhost:7270/api/v1/health`
 Development OpenAPI document: `https://localhost:7270/openapi/v1.json`
 Admin authentication setup: see [database setup](Documentation/Database/LocalSetup.md) and [authentication API](Documentation/API/Admin-Authentication.md).
 
+The `Keep Render API awake` GitHub Actions workflow requests the deployed API health endpoint every 10 minutes. Scheduled workflows run from the repository's default branch; use the Actions tab to run it manually or check its status.
+
 ### Frontend
 
 ```powershell

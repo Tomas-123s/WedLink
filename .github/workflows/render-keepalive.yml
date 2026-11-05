@@ -1,0 +1,14 @@
+name: Keep Render API awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check Render health endpoint
+        run: curl --fail --silent --show-error --max-time 120 https://wedlink-api.onrender.com/api/v1/health
