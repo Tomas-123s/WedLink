@@ -222,7 +222,9 @@ var app = builder.Build();
 // Production deployment uses MonsterASP SQL Server through the configured
 // ConnectionStrings:WedLinkDb value. Apply pending schema changes before
 // accepting requests so new tables (including StoredMediaFiles) exist.
-if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+var applyMigrationsOnStartup = app.Configuration.GetValue<bool?>("Database:ApplyMigrationsOnStartup")
+    ?? app.Environment.IsProduction();
+if (applyMigrationsOnStartup)
 {
     await using var migrationScope = app.Services.CreateAsyncScope();
     var db = migrationScope.ServiceProvider.GetRequiredService<WedLinkDbContext>();
