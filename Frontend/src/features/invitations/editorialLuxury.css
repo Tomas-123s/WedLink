@@ -1030,6 +1030,7 @@
 }
 
 .editorial-luxury-hero__image { position: absolute; z-index: -2; inset: -4% 0; width: 100%; height: 108%; object-fit: cover; object-position: center 42%; transform: translateY(var(--hero-parallax, 0px)) scale(1.025); filter: saturate(.8); }
+.editorial-luxury-hero__image-backdrop { display: none; }
 .editorial-luxury-hero__shade { position: absolute; z-index: -1; inset: -4% 0; width: 100%; height: 108%; background: linear-gradient(180deg, rgb(15 15 15 / 12%) 8%, rgb(15 15 15 / 18%) 30%, rgb(15 15 15 / 42%) 53%, #151515 100%), linear-gradient(90deg, rgb(21 21 21 / 20%), transparent 35%, transparent 65%, rgb(21 21 21 / 20%)); }
 .editorial-luxury-hero__copy { width: min(100%, 58rem); }
 .editorial-luxury-hero__kicker { margin-bottom: 0.9rem; }
@@ -1286,10 +1287,35 @@
     padding: max(5.5rem, env(safe-area-inset-top)) 1rem max(3rem, env(safe-area-inset-bottom));
   }
 
-  /* Keep both faces in view on portrait screens and reserve the hero for the couple. */
+  /* Show the full original photo and use a softened fill behind it instead of cropping either person. */
   .editorial-luxury-hero__image {
-    object-position: 38% 42%;
-    transform: translateY(var(--hero-parallax, 0px)) scale(1.01);
+    z-index: -2;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    transform: none;
+    filter: saturate(.92);
+  }
+
+  .editorial-luxury-page.is-invitation-open .editorial-luxury-hero__image {
+    animation: none;
+  }
+
+  .editorial-luxury-hero__image-backdrop {
+    position: absolute;
+    z-index: -3;
+    inset: -5%;
+    display: block;
+    width: 110%;
+    height: 110%;
+    object-fit: cover;
+    object-position: center;
+    transform: scale(1.04);
+    filter: blur(18px) saturate(.68) brightness(.62);
+    opacity: .82;
+    pointer-events: none;
   }
 
   .editorial-luxury-hero__shade {

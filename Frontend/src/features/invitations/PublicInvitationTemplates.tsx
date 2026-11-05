@@ -134,7 +134,10 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
     </section>
 
     <section className="editorial-luxury-hero" id="invitation-hero" ref={heroRef}>
-      {heroPortrait && <img className="editorial-luxury-hero__image" alt={`صورة للعروسين ${item.brideName} و${item.groomName}`} fetchPriority="high" src={heroPortrait.url} />}
+      {heroPortrait && <>
+        <img aria-hidden="true" alt="" className="editorial-luxury-hero__image-backdrop" decoding="async" fetchPriority="low" src={heroPortrait.url} />
+        <img className="editorial-luxury-hero__image" alt={`صورة للعروسين ${item.brideName} و${item.groomName}`} fetchPriority="high" src={heroPortrait.url} />
+      </>}
       <div className="editorial-luxury-hero__shade" />
       <FloralMark className="editorial-luxury-hero__botanical editorial-luxury-hero__botanical--right" />
       <FloralMark className="editorial-luxury-hero__botanical editorial-luxury-hero__botanical--left" />
