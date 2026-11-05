@@ -1286,10 +1286,56 @@
     padding: max(5.5rem, env(safe-area-inset-top)) 1rem max(3rem, env(safe-area-inset-bottom));
   }
 
+  /* Keep both faces in view on portrait screens and reserve the hero for the couple. */
+  .editorial-luxury-hero__image {
+    object-position: 38% 42%;
+    transform: translateY(var(--hero-parallax, 0px)) scale(1.01);
+  }
+
+  .editorial-luxury-hero__shade {
+    background:
+      linear-gradient(180deg, rgb(15 15 15 / 18%) 0%, rgb(15 15 15 / 12%) 32%, rgb(15 15 15 / 48%) 58%, #151515 100%),
+      linear-gradient(90deg, rgb(21 21 21 / 30%), transparent 42%, transparent 72%, rgb(21 21 21 / 12%));
+  }
+
+  .editorial-luxury-hero__botanical {
+    opacity: .38;
+  }
+
+  .editorial-luxury-hero__botanical--right {
+    top: 8%;
+    right: .5rem;
+    width: 3.5rem;
+  }
+
+  .editorial-luxury-hero__botanical--left {
+    top: auto;
+    right: .5rem;
+    bottom: 16%;
+    left: auto;
+    width: 3.5rem;
+  }
+
   .editorial-luxury-hero__names {
     max-width: 100%;
     overflow-wrap: anywhere;
-    font-size: clamp(3rem, 15vw, 5.25rem);
+    font-size: clamp(3rem, 15vw, 5rem);
+  }
+
+  .editorial-luxury-hero__intro {
+    max-width: 30rem;
+    margin-inline: auto;
+    line-height: 1.8;
+    text-wrap: balance;
+  }
+
+  .editorial-luxury-hero__date {
+    line-height: 1.8;
+    text-wrap: balance;
+  }
+
+  .editorial-luxury-scroll-cue {
+    margin-top: 1.5rem;
   }
 
   .editorial-luxury-hero__actions {
