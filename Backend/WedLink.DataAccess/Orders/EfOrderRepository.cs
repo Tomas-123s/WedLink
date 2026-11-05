@@ -288,6 +288,22 @@ public sealed class EfOrderRepository(WedLinkDbContext dbContext) : IOrderReposi
         return await GetByIdAsync(orderId, cancellationToken);
     }
 
+    public async Task<bool> SoftDeleteAsync(
+        int orderId,
+        DateTimeOffset deletedAt,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await dbContext.Orders.FirstOrDefaultAsync(
+            item => item.OrderId == orderId && item.DeletedAt == null,
+            cancellationToken);
+        if (order is null) return false;
+
+        order.DeletedAt = deletedAt;
+        order.UpdatedAt = deletedAt;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<OrderBalanceData?> GetBalanceAsync(
         int orderId,
         CancellationToken cancellationToken = default)

@@ -25,6 +25,7 @@ public interface IGuestRepository
     Task<GuestMessageData?> AddMessageAsync(int invitationId, GuestMessageInput input, DateTimeOffset now, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AdminGuestMessageData>?> GetMessagesForAdminAsync(int invitationId, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAsync(int invitationId, int messageId, string adminUserId, DateTimeOffset now, CancellationToken cancellationToken = default);
+    Task<bool> RestoreMessageAsync(int invitationId, int messageId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MusicTrackData>> GetMusicTracksAsync(bool activeOnly, CancellationToken cancellationToken = default);
     Task<MusicTrackData> AddMusicTrackAsync(string title, string? artist, string rightsReference, string storageKey, string contentType, DateTimeOffset now, CancellationToken cancellationToken = default);
     Task<MusicTrackData?> UpdateMusicTrackAsync(int musicTrackId, string title, string? artist, string rightsReference, bool isActive, CancellationToken cancellationToken = default);

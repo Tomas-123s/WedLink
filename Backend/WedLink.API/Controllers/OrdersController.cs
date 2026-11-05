@@ -70,6 +70,18 @@ public sealed class OrdersController(OrderService orderService) : ControllerBase
         });
     }
 
+    [HttpDelete("{orderId:int}")]
+    public async Task<IActionResult> Delete(
+        int orderId,
+        CancellationToken cancellationToken)
+    {
+        return await RunOrderAction(async () =>
+        {
+            await orderService.DeleteAsync(orderId, cancellationToken);
+            return NoContent();
+        });
+    }
+
     [HttpGet("{orderId:int}/payments")]
     public async Task<IActionResult> GetPayments(
         int orderId,

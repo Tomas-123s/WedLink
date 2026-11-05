@@ -14,11 +14,11 @@ public sealed record InvitationData(
     IReadOnlyList<PreviewReviewEventData> ReviewEvents);
 
 public sealed record PreviewInvitationData(
-    string TemplateName, string TemplateVersionNumber, string BrideName, string GroomName, DateTime? WeddingDateTimeLocal,
+    string TemplateName, string TemplateVersionNumber, string RendererKey, string BrideName, string GroomName, DateTime? WeddingDateTimeLocal,
     string TimeZoneId, string? VenueName, string? VenueAddress, string? LocationUrl,
     string? CustomizationsJson, IReadOnlyList<InvitationFeatureData> Features, IReadOnlyList<InvitationMediaData> Media);
 
-public sealed record PublicInvitationData(bool EventEnded, bool HasFinalPng, string TemplateName, string BrideName, string GroomName,
+public sealed record PublicInvitationData(bool EventEnded, bool HasFinalPng, string TemplateName, string RendererKey, string BrideName, string GroomName,
     DateTime? WeddingDateTimeLocal, string TimeZoneId, string? VenueName, string? VenueAddress, string? LocationUrl,
     string? CustomizationsJson, IReadOnlyList<InvitationFeatureData> Features, IReadOnlyList<PublicInvitationMediaData> Media);
 public sealed record PublicInvitationMediaData(int MediaId, string MediaType, string OriginalFileName, string ContentType, string StorageKey);
@@ -49,7 +49,7 @@ public interface IInvitationRepository
     Task<InvitationLifecycleFailure> ExtendAsync(int invitationId, DateTimeOffset now, CancellationToken cancellationToken = default);
     Task<PublicInvitationData?> GetPublicAsync(string slug, DateTimeOffset now, CancellationToken cancellationToken = default);
     Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int mediaId, DateTimeOffset now, CancellationToken cancellationToken = default);
-    Task<InvitationLifecycleFailure> SetFinalPngAsync(int invitationId, string storageKey, DateTimeOffset now, CancellationToken cancellationToken = default);
+    Task<(InvitationLifecycleFailure Failure, string? ReplacedStorageKey)> SetFinalPngAsync(int invitationId, string storageKey, DateTimeOffset now, CancellationToken cancellationToken = default);
     Task<InvitationCardData?> GetFinalPngAsync(int invitationId, CancellationToken cancellationToken = default);
     Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken cancellationToken = default);
 }

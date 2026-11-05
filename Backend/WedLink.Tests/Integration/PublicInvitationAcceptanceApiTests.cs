@@ -1,6 +1,9 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WedLink.DataAccess.Customers;
@@ -24,6 +27,13 @@ public sealed class PublicInvitationAcceptanceApiTests
         await SeedInvitationsAsync(factory);
         using var client = factory.CreateClient();
 
+        var invitationResponse = await client.GetAsync("/api/v1/public/invitations/active-share-slug");
+        Assert.Equal(HttpStatusCode.OK, invitationResponse.StatusCode);
+        var invitationJson = await invitationResponse.Content.ReadAsStringAsync();
+        using var invitationDocument = JsonDocument.Parse(invitationJson);
+        Assert.Equal("editorial-luxury", invitationDocument.RootElement.GetProperty("rendererKey").GetString());
+        Assert.DoesNotContain("packageKey", invitationJson, StringComparison.OrdinalIgnoreCase);
+
         var activeResponse = await client.GetAsync("/api/v1/public/invitations/active-share-slug/share");
         Assert.Equal(HttpStatusCode.OK, activeResponse.StatusCode);
         var activeHtml = await activeResponse.Content.ReadAsStringAsync();
@@ -40,6 +50,65 @@ public sealed class PublicInvitationAcceptanceApiTests
         Assert.Contains("/share-default.png", expiredHtml);
         Assert.DoesNotContain("ليلى", expiredHtml);
         Assert.DoesNotContain("Omar", expiredHtml);
+    }
+
+    [Fact]
+    public async Task PublicInvitationMapsUnknownInternalPackageKeysToDefaultRenderer()
+    {
+        using var factory = new WedLinkApiFactory();
+        await factory.CreateDatabaseAsync();
+        await SeedInvitationsAsync(factory);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<WedLinkDbContext>();
+            var version = await db.TemplateVersions.SingleAsync();
+            version.PackageKey = "private-internal-package-v9";
+            await db.SaveChangesAsync();
+        }
+
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/v1/public/invitations/active-share-slug");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal("default", document.RootElement.GetProperty("rendererKey").GetString());
+        Assert.DoesNotContain("private-internal-package-v9", json);
+        Assert.DoesNotContain("packageKey", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PrivatePreviewUsesTheSameSafeRendererAsThePublishedInvitation()
+    {
+        using var factory = new WedLinkApiFactory();
+        await factory.CreateDatabaseAsync();
+        await SeedInvitationsAsync(factory);
+        const string token = "test-private-preview-token";
+        var now = DateTimeOffset.UtcNow;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<WedLinkDbContext>();
+            var invitation = await db.Invitations.SingleAsync(item => item.OrderId == 2);
+            invitation.Status = "Approved";
+            db.PrivateLinkTokens.Add(new PrivateLinkToken
+            {
+                OrderId = 2,
+                TokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))),
+                Purpose = "InvitationPreview",
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(1)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.GetAsync("/api/v1/invitation-previews/current");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal("editorial-luxury", document.RootElement.GetProperty("rendererKey").GetString());
+        Assert.DoesNotContain("packageKey", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("editorial-luxury-v1", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -96,7 +165,7 @@ public sealed class PublicInvitationAcceptanceApiTests
         db.Templates.Add(new Template { TemplateId = 1, Name = "Test Template", CreatedAt = now });
         db.TemplateVersions.Add(new TemplateVersion
         {
-            TemplateVersionId = 1, TemplateId = 1, VersionNumber = "1.0", PackageKey = "test-v1", IsActive = true, CreatedAt = now
+            TemplateVersionId = 1, TemplateId = 1, VersionNumber = "1.0", PackageKey = "editorial-luxury-v1", IsActive = true, CreatedAt = now
         });
         db.TemplateFeatures.AddRange(
             new TemplateFeature { TemplateVersionId = 1, FeatureId = 5, IsEnabled = true, MaximumCount = 5 },

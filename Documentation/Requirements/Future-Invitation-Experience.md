@@ -68,4 +68,5 @@ Detailed visual specifications for each template are prepared and approved separ
 - Do not implement template-specific animations before their visual specifications are approved.
 - Do not invent the Cinematic template's detailed appearance.
 - Implement each approved template as a separate, understandable React template; share components only where they provide clear value.
+- Public invitation data exposes only a supported `rendererKey` (`editorial-luxury` or `default`), resolved server-side from the internal package key. Never include the internal package key in public responses. Use `editorial-luxury-v1` (or a `cinematic-v*` key) to select the Editorial Luxury React template; unknown keys use the default renderer.
 - Preserve the task-by-task development workflow. Do not begin work from this roadmap until the developer has reviewed and approved it.

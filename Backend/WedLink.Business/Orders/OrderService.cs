@@ -115,6 +115,15 @@ public sealed class OrderService(IOrderRepository repository)
                ?? throw new OrderStatusConflictException();
     }
 
+    public async Task DeleteAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        if (orderId < 1 || !await repository.SoftDeleteAsync(
+                orderId, DateTimeOffset.UtcNow, cancellationToken))
+        {
+            throw new OrderNotFoundException();
+        }
+    }
+
     public async Task<OrderBalanceData> GetBalanceAsync(
         int orderId,
         CancellationToken cancellationToken = default)

@@ -4,6 +4,7 @@ import {
   changeOrderStatus,
   createSubmissionLink,
   createOrder,
+  deleteOrder,
   deleteSubmissionMedia,
   getCustomerSubmission,
   getCurrentSubmissionLink,
@@ -85,6 +86,15 @@ export function OrdersPage() {
     },
   })
   const statusMutation = useMutation({ mutationFn: ({ id, status }: { id: number; status: string }) => changeOrderStatus(id, status), onSuccess: refreshOrders })
+  const deleteOrderMutation = useMutation({
+    mutationFn: deleteOrder,
+    onSuccess: async (_, orderId) => {
+      if (selectedOrder?.orderId === orderId) setSelectedOrder(null)
+      const refreshedPage = await getOrders(search, statusFilter, page)
+      if (refreshedPage.items.length === 0 && page > 1) setPage(page - 1)
+      await queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
   const paymentMutation = useMutation({
     mutationFn: () => recordOrderPayment(selectedOrder!.orderId, {
       amount: Number(paymentAmount), method: paymentMethod, reference: paymentReference.trim() || null, note: paymentNote.trim() || null,
@@ -162,9 +172,10 @@ export function OrdersPage() {
           {ordersQuery.isPending && <p role="status">جارٍ تحميل الطلبات...</p>}
           {ordersQuery.isError && <p className="form-error" role="alert">{ordersQuery.error.message}</p>}
           {statusMutation.isError && <p className="form-error" role="alert">{statusMutation.error.message}</p>}
+          {deleteOrderMutation.isError && <p className="form-error" role="alert">{deleteOrderMutation.error.message}</p>}
           {ordersQuery.data?.items.length === 0 && <p className="empty-state">لا توجد طلبات مطابقة.</p>}
           {ordersQuery.data && ordersQuery.data.items.length > 0 && <div className="table-scroll"><table className="customers-table"><thead><tr><th>الطلب</th><th>العميل</th><th>القالب</th><th>الحالة</th><th>الإجمالي</th><th>إجراء</th></tr></thead><tbody>
-            {ordersQuery.data.items.map((order) => <tr key={order.orderId}><td>#{order.orderId}</td><td>{order.customerName}</td><td>{order.templateName} · {order.templateVersionNumber}</td><td>{order.status}</td><td>{money(order.totalAmount, order.currency)}</td><td className="table-actions"><button className="text-button" type="button" onClick={() => { setSelectedOrder(order); setSubmissionLink(null) }}>التفاصيل</button>{nextStatuses[order.status]?.length ? <select aria-label={`تغيير حالة الطلب ${order.orderId}`} disabled={statusMutation.isPending} value="" onChange={(event) => { if (event.target.value) statusMutation.mutate({ id: order.orderId, status: event.target.value }) }}><option value="">تغيير الحالة</option>{nextStatuses[order.status].map((status) => <option key={status} value={status}>{status}</option>)}</select> : null}</td></tr>)}
+            {ordersQuery.data.items.map((order) => <tr key={order.orderId}><td>#{order.orderId}</td><td>{order.customerName}</td><td>{order.templateName} · {order.templateVersionNumber}</td><td>{order.status}</td><td>{money(order.totalAmount, order.currency)}</td><td className="table-actions"><button className="text-button" type="button" onClick={() => { setSelectedOrder(order); setSubmissionLink(null) }}>التفاصيل</button>{nextStatuses[order.status]?.length ? <select aria-label={`تغيير حالة الطلب ${order.orderId}`} disabled={statusMutation.isPending} value="" onChange={(event) => { if (event.target.value) statusMutation.mutate({ id: order.orderId, status: event.target.value }) }}><option value="">تغيير الحالة</option>{nextStatuses[order.status].map((status) => <option key={status} value={status}>{status}</option>)}</select> : null}<button className="text-button text-button--danger" type="button" disabled={deleteOrderMutation.isPending} onClick={() => { if (window.confirm(`حذف الطلب #${order.orderId} للعميل ${order.customerName}؟\n\nسيختفي الطلب ودعوته من العرض، مع الاحتفاظ بسجل المدفوعات والمراجعات.`)) deleteOrderMutation.mutate(order.orderId) }}>{deleteOrderMutation.isPending ? 'جارٍ الحذف...' : 'حذف'}</button></td></tr>)}
           </tbody></table></div>}
           {ordersQuery.data && ordersQuery.data.totalPages > 1 && <div className="pagination"><button className="secondary-button" disabled={page <= 1} onClick={() => setPage(page - 1)} type="button">السابق</button><span>صفحة {page} من {ordersQuery.data.totalPages}</span><button className="secondary-button" disabled={page >= ordersQuery.data.totalPages} onClick={() => setPage(page + 1)} type="button">التالي</button></div>}
         </section>

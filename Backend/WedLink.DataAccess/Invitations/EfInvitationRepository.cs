@@ -23,7 +23,12 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
             && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
         if (invitation is null) return InvitationLifecycleFailure.NotFound;
-        if (invitation.Status != "Approved") return InvitationLifecycleFailure.NotApproved;
+        if (invitation.Status != "Approved")
+        {
+            if (!await HasCurrentCustomerApprovalAsync(invitation, cancellationToken))
+                return InvitationLifecycleFailure.NotApproved;
+            invitation.Status = "Approved";
+        }
         if (invitation.WeddingDateTimeLocal is null) return InvitationLifecycleFailure.MissingWeddingDate;
         if (await db.Invitations.AnyAsync(item => item.Slug == slug && item.InvitationId != invitationId, cancellationToken))
             return InvitationLifecycleFailure.SlugConflict;
@@ -106,9 +111,9 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                          join version in db.TemplateVersions.AsNoTracking() on invitation.TemplateVersionId equals version.TemplateVersionId
                          join template in db.Templates.AsNoTracking() on version.TemplateId equals template.TemplateId
                          where invitation.Slug == slug && order.DeletedAt == null
-                         select new { invitation, template.Name }).FirstOrDefaultAsync(cancellationToken);
+                         select new { invitation, template.Name, version.PackageKey }).FirstOrDefaultAsync(cancellationToken);
         if (row is null || row.invitation.Status is "Expired" || row.invitation.ExpiresAt <= now)
-            return row is null ? null : new PublicInvitationData(true, row.invitation.FinalPngStorageKey is not null, "", "", "", null, "Africa/Cairo", null, null, null, null, [], []);
+            return row is null ? null : new PublicInvitationData(true, row.invitation.FinalPngStorageKey is not null, "", "default", "", "", null, "Africa/Cairo", null, null, null, null, [], []);
         if (row.invitation.Status != "Published") return null;
         var (bride, groom) = ParseCoupleNames(row.invitation.CoupleNames);
         var features = await (from setting in db.TemplateFeatures.AsNoTracking()
@@ -120,10 +125,16 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         var media = await db.InvitationMedia.AsNoTracking().Where(item => item.InvitationId == row.invitation.InvitationId && item.DeletedAt == null)
             .OrderBy(item => item.SortOrder).Select(item => new PublicInvitationMediaData(item.InvitationMediaId,
                 item.MediaType, item.OriginalFileName, item.ContentType, item.StorageKey)).ToListAsync(cancellationToken);
-        return new PublicInvitationData(false, row.invitation.FinalPngStorageKey is not null, row.Name, bride, groom, row.invitation.WeddingDateTimeLocal,
+        return new PublicInvitationData(false, row.invitation.FinalPngStorageKey is not null, row.Name, ResolvePublicRendererKey(row.PackageKey), bride, groom, row.invitation.WeddingDateTimeLocal,
             row.invitation.TimeZoneId, row.invitation.VenueName, row.invitation.VenueAddress, row.invitation.LocationUrl,
             customizations, features, media);
     }
+
+    private static string ResolvePublicRendererKey(string packageKey) =>
+        packageKey.StartsWith("editorial-luxury", StringComparison.OrdinalIgnoreCase)
+        || packageKey.StartsWith("cinematic", StringComparison.OrdinalIgnoreCase)
+            ? "editorial-luxury"
+            : "default";
 
     public async Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int mediaId, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
@@ -136,17 +147,22 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
             .Select(item => new PublicMediaContentData(item.StorageKey, item.ContentType, item.OriginalFileName)).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<InvitationLifecycleFailure> SetFinalPngAsync(int invitationId, string storageKey, DateTimeOffset now, CancellationToken cancellationToken = default)
+    public async Task<(InvitationLifecycleFailure Failure, string? ReplacedStorageKey)> SetFinalPngAsync(int invitationId, string storageKey, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
             && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
-        if (invitation is null) return InvitationLifecycleFailure.NotFound;
-        if (invitation.FinalPngStorageKey is not null) return InvitationLifecycleFailure.InvalidState;
-        if (invitation.Status is not ("Approved" or "Published")) return InvitationLifecycleFailure.InvalidState;
+        if (invitation is null) return (InvitationLifecycleFailure.NotFound, null);
+        var replacedStorageKey = invitation.FinalPngStorageKey;
+        if (invitation.Status is not ("Approved" or "Published" or "Paused"))
+        {
+            if (!await HasCurrentCustomerApprovalAsync(invitation, cancellationToken))
+                return (InvitationLifecycleFailure.InvalidState, null);
+            invitation.Status = "Approved";
+        }
         invitation.FinalPngStorageKey = storageKey;
         invitation.UpdatedAt = now;
         await db.SaveChangesAsync(cancellationToken);
-        return InvitationLifecycleFailure.None;
+        return (InvitationLifecycleFailure.None, replacedStorageKey);
     }
 
     public async Task<InvitationCardData?> GetFinalPngAsync(int invitationId, CancellationToken cancellationToken = default) =>
@@ -196,13 +212,17 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         var customizations = row.invitation is null
             ? row.submission?.CustomizationsJson
             : await GetCustomizationsAsync(row.invitation.InvitationId, cancellationToken);
-        var selectedStorageKeys = row.invitation is null
-            ? Array.Empty<string>()
-            : await db.InvitationMedia.AsNoTracking().Where(item => item.InvitationId == row.invitation.InvitationId && item.DeletedAt == null)
-                .Select(item => item.StorageKey).ToArrayAsync(cancellationToken);
-        var selectedMediaIds = await db.CustomerSubmissionMedia.AsNoTracking()
-            .Where(item => item.OrderId == orderId && item.DeletedAt == null && selectedStorageKeys.Contains(item.StorageKey))
-            .Select(item => item.CustomerSubmissionMediaId).ToArrayAsync(cancellationToken);
+        var selectedMediaIds = row.invitation is null
+            ? Array.Empty<int>()
+            : await (from invitationMedia in db.InvitationMedia.AsNoTracking()
+                     join submissionMedia in db.CustomerSubmissionMedia.AsNoTracking()
+                         on invitationMedia.StorageKey equals submissionMedia.StorageKey
+                     where invitationMedia.InvitationId == row.invitation.InvitationId
+                         && invitationMedia.DeletedAt == null
+                         && submissionMedia.OrderId == orderId
+                         && submissionMedia.DeletedAt == null
+                     orderby invitationMedia.SortOrder
+                     select submissionMedia.CustomerSubmissionMediaId).ToArrayAsync(cancellationToken);
         var reviewEvents = row.invitation is null
             ? Array.Empty<PreviewReviewEventData>()
             : (await GetEventsAsync(row.invitation.InvitationId, cancellationToken)).ToArray();
@@ -211,6 +231,9 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
             ? (row.submission?.BrideName ?? "", row.submission?.GroomName ?? "")
             : ParseCoupleNames(row.invitation.CoupleNames);
         var currentStatus = row.invitation?.Status ?? "Draft";
+        if (row.invitation is not null && currentStatus != "Approved"
+            && await HasCurrentCustomerApprovalAsync(row.invitation, cancellationToken))
+            currentStatus = "Approved";
         if (row.invitation?.ExpiresAt is DateTimeOffset expiry && expiry <= timeProvider.GetUtcNow()
             && currentStatus is ("Published" or "Paused")) currentStatus = "Expired";
         return new InvitationData(orderId, row.invitation?.InvitationId, row.SelectedTemplateVersionId, row.invitation?.MusicTrackId, row.Name,
@@ -261,6 +284,13 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                 return new(null, InvitationSaveFailure.UnsupportedFeature);
         }
 
+        var existingCustomizations = await db.InvitationCustomizations
+            .Where(item => item.InvitationId == invitation.InvitationId).ToListAsync(cancellationToken);
+        var invitationMedia = await db.InvitationMedia
+            .Where(item => item.InvitationId == invitation.InvitationId && item.DeletedAt == null).ToListAsync(cancellationToken);
+        var keepsApproval = invitation.Status == "Approved"
+            && HasSameApprovedContent(invitation, input, allowedMedia.Values, invitationMedia, existingCustomizations);
+
         invitation.CoupleNames = JsonSerializer.Serialize(new[] { input.BrideName, input.GroomName },
             new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
         invitation.WeddingDateTimeLocal = input.WeddingDateTimeLocal;
@@ -268,10 +298,9 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         invitation.VenueName = input.VenueName;
         invitation.VenueAddress = input.VenueAddress;
         invitation.LocationUrl = input.LocationUrl;
-        invitation.Status = "Draft";
+        invitation.Status = keepsApproval ? "Approved" : "Draft";
         invitation.UpdatedAt = now;
 
-        var existingCustomizations = await db.InvitationCustomizations.Where(item => item.InvitationId == invitation.InvitationId).ToListAsync(cancellationToken);
         if (existingCustomizations.Count > 0) db.InvitationCustomizations.RemoveRange(existingCustomizations);
         // Save the invitation first when it is new so its generated key is available for children.
         await db.SaveChangesAsync(cancellationToken);
@@ -287,15 +316,20 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                 });
         }
 
-        var invitationMedia = await db.InvitationMedia.Where(item => item.InvitationId == invitation.InvitationId && item.DeletedAt == null).ToListAsync(cancellationToken);
+        var selectedStorageKeys = allowedMedia.Values.Select(item => item.StorageKey).ToHashSet(StringComparer.Ordinal);
         foreach (var existing in invitationMedia)
         {
-            var sourceStillSelected = allowedMedia.Values.FirstOrDefault(item => item.StorageKey == existing.StorageKey);
-            if (sourceStillSelected is null) existing.DeletedAt = now;
+            if (!selectedStorageKeys.Contains(existing.StorageKey)) existing.DeletedAt = now;
         }
-        var existingKeys = invitationMedia.Select(item => item.StorageKey).ToHashSet(StringComparer.Ordinal);
-        var nextSortOrder = invitationMedia.Count == 0 ? 0 : invitationMedia.Max(item => item.SortOrder) + 1;
-        foreach (var media in allowedMedia.Values.Where(item => !existingKeys.Contains(item.StorageKey)))
+        var existingByStorageKey = invitationMedia.ToDictionary(item => item.StorageKey, StringComparer.Ordinal);
+        for (var sortOrder = 0; sortOrder < input.MediaIds.Count; sortOrder++)
+        {
+            var media = allowedMedia[input.MediaIds[sortOrder]];
+            if (existingByStorageKey.TryGetValue(media.StorageKey, out var existing))
+            {
+                existing.SortOrder = sortOrder;
+                continue;
+            }
             db.InvitationMedia.Add(new InvitationMedia
             {
                 InvitationId = invitation.InvitationId,
@@ -304,11 +338,64 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                 ContentType = media.ContentType,
                 SizeBytes = media.SizeBytes,
                 StorageKey = media.StorageKey,
-                SortOrder = nextSortOrder++,
+                SortOrder = sortOrder,
                 UploadedAt = now
             });
+        }
         await db.SaveChangesAsync(cancellationToken);
         return new(await GetForAdminAsync(orderId, cancellationToken), InvitationSaveFailure.None);
+    }
+
+    private static bool HasSameApprovedContent(Invitation invitation, SaveInvitationInput input,
+        IEnumerable<CustomerSubmissionMedia> selectedSources, IReadOnlyCollection<InvitationMedia> currentMedia,
+        IReadOnlyCollection<InvitationCustomization> currentCustomizations)
+    {
+        string[]? names;
+        try { names = JsonSerializer.Deserialize<string[]>(invitation.CoupleNames); }
+        catch (JsonException) { return false; }
+        if (names is not { Length: 2 }
+            || !string.Equals(names[0], input.BrideName, StringComparison.Ordinal)
+            || !string.Equals(names[1], input.GroomName, StringComparison.Ordinal)
+            || invitation.WeddingDateTimeLocal != input.WeddingDateTimeLocal
+            || !string.Equals(invitation.TimeZoneId, input.TimeZoneId, StringComparison.Ordinal)
+            || !string.Equals(invitation.VenueName, input.VenueName, StringComparison.Ordinal)
+            || !string.Equals(invitation.VenueAddress, input.VenueAddress, StringComparison.Ordinal)
+            || !string.Equals(invitation.LocationUrl, input.LocationUrl, StringComparison.Ordinal))
+            return false;
+
+        Dictionary<string, string> requestedCustomizations;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(input.CustomizationsJson))
+                requestedCustomizations = new Dictionary<string, string>(StringComparer.Ordinal);
+            else
+            {
+                using var document = JsonDocument.Parse(input.CustomizationsJson);
+                requestedCustomizations = document.RootElement.EnumerateObject().ToDictionary(
+                    property => property.Name, property => property.Value.GetRawText(), StringComparer.Ordinal);
+            }
+        }
+        catch (JsonException) { return false; }
+        if (requestedCustomizations.Count != currentCustomizations.Count
+            || currentCustomizations.Any(item => !requestedCustomizations.TryGetValue(item.Key, out var value)
+                || !string.Equals(value, item.ValueJson, StringComparison.Ordinal)))
+            return false;
+
+        var requestedMediaKeys = selectedSources.Select(item => item.StorageKey).ToArray();
+        var currentMediaKeys = currentMedia.OrderBy(item => item.SortOrder).Select(item => item.StorageKey).ToArray();
+        return requestedMediaKeys.SequenceEqual(currentMediaKeys, StringComparer.Ordinal);
+    }
+
+    private async Task<bool> HasCurrentCustomerApprovalAsync(Invitation invitation, CancellationToken cancellationToken)
+    {
+        var latestReview = await db.PreviewReviewEvents.AsNoTracking()
+            .Where(item => item.InvitationId == invitation.InvitationId && item.Source == "Customer")
+            .OrderByDescending(item => item.CreatedAt)
+            .ThenByDescending(item => item.PreviewReviewEventId)
+            .Select(item => new { item.Action, item.CreatedAt })
+            .FirstOrDefaultAsync(cancellationToken);
+        return latestReview?.Action == "Approved"
+            && (invitation.UpdatedAt is null || latestReview.CreatedAt >= invitation.UpdatedAt.Value);
     }
 
     public async Task<CreatedPreviewLinkData?> CreatePreviewLinkAsync(int orderId, string tokenHash, DateTimeOffset now, DateTimeOffset expiresAt, CancellationToken cancellationToken = default)
@@ -337,7 +424,8 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                               where setting.TemplateVersionId == row.invitation.TemplateVersionId && setting.IsEnabled
                               select new InvitationFeatureData(feature.Key, feature.Name, true, setting.MaximumCount, setting.MaximumFileSizeMb))
             .ToListAsync(cancellationToken);
-        return new PreviewInvitationData(row.template.Name, row.version.VersionNumber, brideName, groomName,
+        return new PreviewInvitationData(row.template.Name, row.version.VersionNumber,
+            ResolvePublicRendererKey(row.version.PackageKey), brideName, groomName,
             row.invitation.WeddingDateTimeLocal, row.invitation.TimeZoneId, row.invitation.VenueName,
             row.invitation.VenueAddress, row.invitation.LocationUrl, customizations, features, media);
     }

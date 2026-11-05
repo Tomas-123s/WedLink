@@ -74,6 +74,7 @@ public sealed class GuestServiceTests
         public Task<GuestMessageData?> AddMessageAsync(int id, GuestMessageInput input, DateTimeOffset now, CancellationToken cancellationToken = default) => Task.FromResult<GuestMessageData?>(null);
         public Task<IReadOnlyList<AdminGuestMessageData>?> GetMessagesForAdminAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<AdminGuestMessageData>?>([]);
         public Task<bool> DeleteMessageAsync(int invitationId, int messageId, string adminUserId, DateTimeOffset now, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<bool> RestoreMessageAsync(int invitationId, int messageId, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task<IReadOnlyList<MusicTrackData>> GetMusicTracksAsync(bool activeOnly, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MusicTrackData>>([]);
         public Task<MusicTrackData> AddMusicTrackAsync(string title, string? artist, string rightsReference, string storageKey, string contentType, DateTimeOffset now, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<MusicTrackData?> UpdateMusicTrackAsync(int musicTrackId, string title, string? artist, string rightsReference, bool isActive, CancellationToken cancellationToken = default) => Task.FromResult<MusicTrackData?>(null);

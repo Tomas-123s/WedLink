@@ -12,10 +12,8 @@ public sealed class GuestService(IGuestRepository repository, IPrivateLinkTokenG
         if (input.Response is not ("Yes" or "No")) throw new GuestValidationException("اختر نعم أو لا لتأكيد الحضور.");
         var guestName = Clean(input.GuestName);
         if (guestName?.Length > 150) throw new GuestValidationException("الاسم يتجاوز 150 حرفًا.");
-        if (input.AccompanyingPeople < 0 || input.AccompanyingPeople == int.MaxValue)
+        if (input.AccompanyingPeople < 0)
             throw new GuestValidationException("عدد المرافقين يجب أن يكون رقمًا موجبًا صالحًا.");
-        if (context.MaximumAccompanyingPeople is int max && input.Response == "Yes" && input.AccompanyingPeople > max)
-            throw new GuestValidationException($"عدد المرافقين يتجاوز الحد المسموح ({max}).");
         var isUpdate = !string.IsNullOrWhiteSpace(editToken);
         string rawToken;
         string hash;
@@ -68,6 +66,8 @@ public sealed class GuestService(IGuestRepository repository, IPrivateLinkTokenG
         repository.GetMessagesForAdminAsync(invitationId, cancellationToken);
     public Task<bool> DeleteMessageAsync(int invitationId, int messageId, string adminUserId, CancellationToken cancellationToken = default) =>
         repository.DeleteMessageAsync(invitationId, messageId, adminUserId, timeProvider.GetUtcNow(), cancellationToken);
+    public Task<bool> RestoreMessageAsync(int invitationId, int messageId, CancellationToken cancellationToken = default) =>
+        repository.RestoreMessageAsync(invitationId, messageId, cancellationToken);
     public Task<IReadOnlyList<MusicTrackData>> GetMusicTracksAsync(bool activeOnly, CancellationToken cancellationToken = default) =>
         repository.GetMusicTracksAsync(activeOnly, cancellationToken);
     public Task<MusicTrackData> AddMusicTrackAsync(string title, string? artist, string rightsReference, string storageKey, string contentType, CancellationToken cancellationToken = default) =>

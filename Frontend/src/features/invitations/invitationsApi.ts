@@ -55,6 +55,7 @@ export interface InvitationDraft {
 export interface PreviewInvitation {
   templateName: string
   templateVersionNumber: string
+  rendererKey: 'editorial-luxury' | 'default'
   brideName: string
   groomName: string
   weddingDateTimeLocal: string | null
@@ -71,6 +72,7 @@ export interface PublicInvitation {
   eventEnded: boolean
   hasFinalPng: boolean
   templateName: string
+  rendererKey: 'editorial-luxury' | 'default'
   brideName: string
   groomName: string
   weddingDateTimeLocal: string | null
@@ -231,7 +233,7 @@ export async function submitGuestMessage(slug: string, input: { guestName: strin
   if (!response.ok) throw new Error(await errorMessage(response))
 }
 
-async function adminSend<T>(url: string, method: 'GET' | 'PUT' | 'DELETE', body?: unknown): Promise<T> {
+async function adminSend<T>(url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', body?: unknown): Promise<T> {
   if (method === 'GET') {
     const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) throw new Error(await errorMessage(response))
@@ -249,6 +251,7 @@ async function adminSend<T>(url: string, method: 'GET' | 'PUT' | 'DELETE', body?
 export function getAdminRsvps(invitationId: number) { return adminSend<{ yesCount: number; noCount: number; expectedAttendance: number; responses: Array<{ rsvpResponseId: number; response: string; guestName: string | null; accompanyingPeople: number; expectedAttendance: number; submittedAt: string }> }>(`/api/v1/admin/invitations/${invitationId}/rsvps`, 'GET') }
 export function getAdminGuestMessages(invitationId: number) { return adminSend<Array<{ guestMessageId: number; guestName: string | null; message: string; submittedAt: string; deletedAt: string | null }>>(`/api/v1/admin/invitations/${invitationId}/messages`, 'GET') }
 export function deleteAdminGuestMessage(invitationId: number, messageId: number) { return adminSend<void>(`/api/v1/admin/invitations/${invitationId}/messages/${messageId}`, 'DELETE') }
+export function restoreAdminGuestMessage(invitationId: number, messageId: number) { return adminSend<void>(`/api/v1/admin/invitations/${invitationId}/messages/${messageId}/restore`, 'POST') }
 export function getMusicTracks() { return adminSend<MusicTrack[]>('/api/v1/admin/music-tracks', 'GET') }
 export function updateMusicTrack(track: MusicTrack) { return adminSend<MusicTrack>(`/api/v1/admin/music-tracks/${track.musicTrackId}`, 'PUT', track) }
 export function selectInvitationMusic(invitationId: number, musicTrackId: number | null) { return adminSend<void>(`/api/v1/admin/invitations/${invitationId}/music`, 'PUT', { musicTrackId }) }

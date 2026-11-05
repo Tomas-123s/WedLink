@@ -49,7 +49,7 @@ public sealed record InvitationResponse(
     }
 }
 
-public sealed record PreviewInvitationResponse(string TemplateName, string TemplateVersionNumber, string BrideName, string GroomName,
+public sealed record PreviewInvitationResponse(string TemplateName, string TemplateVersionNumber, string RendererKey, string BrideName, string GroomName,
     DateTime? WeddingDateTimeLocal, string TimeZoneId, string? VenueName, string? VenueAddress, string? LocationUrl,
     JsonElement? Customizations, IReadOnlyList<InvitationFeatureResponse> Features, IReadOnlyList<InvitationMediaResponse> Media)
 {
@@ -61,7 +61,7 @@ public sealed record PreviewInvitationResponse(string TemplateName, string Templ
             using var document = JsonDocument.Parse(item.CustomizationsJson);
             customizations = document.RootElement.Clone();
         }
-        return new(item.TemplateName, item.TemplateVersionNumber, item.BrideName, item.GroomName, item.WeddingDateTimeLocal,
+        return new(item.TemplateName, item.TemplateVersionNumber, item.RendererKey, item.BrideName, item.GroomName, item.WeddingDateTimeLocal,
             item.TimeZoneId, item.VenueName, item.VenueAddress, item.LocationUrl, customizations,
             item.Features.Select(feature => new InvitationFeatureResponse(feature.Key, feature.Name, feature.IsEnabled, feature.MaximumCount, feature.MaximumFileSizeMb)).ToArray(),
             item.Media.Select(InvitationContractMapping.FromData).ToArray());
@@ -71,12 +71,12 @@ public sealed record PreviewInvitationResponse(string TemplateName, string Templ
 public sealed record CreatePreviewLinkResponse(string PreviewUrl, DateTimeOffset ExpiresAt);
 public sealed record PreviewReviewRequest([Required] string Action, [StringLength(2000)] string? Comment);
 public sealed record PublicInvitationMediaResponse(int MediaId, string MediaType, string OriginalFileName, string ContentType, string Url);
-public sealed record PublicInvitationResponse(bool EventEnded, bool HasFinalPng, string TemplateName, string BrideName, string GroomName,
+public sealed record PublicInvitationResponse(bool EventEnded, bool HasFinalPng, string TemplateName, string RendererKey, string BrideName, string GroomName,
     DateTime? WeddingDateTimeLocal, string TimeZoneId, string? VenueName, string? VenueAddress, string? LocationUrl,
     JsonElement? Customizations, IReadOnlyList<InvitationFeatureResponse> Features, IReadOnlyList<PublicInvitationMediaResponse> Media)
 {
     public static PublicInvitationResponse FromData(PublicInvitationData item, string slug) => new(item.EventEnded, item.HasFinalPng,
-        item.TemplateName, item.BrideName, item.GroomName, item.WeddingDateTimeLocal, item.TimeZoneId, item.VenueName,
+        item.TemplateName, item.RendererKey, item.BrideName, item.GroomName, item.WeddingDateTimeLocal, item.TimeZoneId, item.VenueName,
         item.VenueAddress, item.LocationUrl, InvitationResponse.ParseCustomizations(item.CustomizationsJson),
         item.Features.Select(feature => new InvitationFeatureResponse(feature.Key, feature.Name, feature.IsEnabled, feature.MaximumCount, feature.MaximumFileSizeMb)).ToArray(),
         item.Media.Select(media => new PublicInvitationMediaResponse(media.MediaId, media.MediaType, media.OriginalFileName,

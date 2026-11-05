@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { getPreviewInvitation, getPreviewMedia, sendPreviewReview } from './invitationsApi'
+import { getPreviewInvitation, getPreviewMedia, sendPreviewReview, type PublicInvitation } from './invitationsApi'
+import { DefaultInvitationTemplate, EditorialLuxuryTemplate } from './PublicInvitationTemplates'
 
 function takePreviewToken(): string {
   const params = new URLSearchParams(window.location.hash.slice(1))
@@ -11,37 +12,42 @@ function takePreviewToken(): string {
 
 const previewToken = window.location.pathname === '/preview' ? takePreviewToken() : ''
 
-function PrivateMedia({ token, mediaId, mediaType, alt }: { token: string; mediaId: number; mediaType: string; alt: string }) {
-  const [url, setUrl] = useState('')
-  const [error, setError] = useState('')
-  useEffect(() => {
-    let active = true
-    let objectUrl = ''
-    getPreviewMedia(token, mediaId).then((value) => {
-      objectUrl = value
-      if (active) setUrl(value)
-      else URL.revokeObjectURL(value)
-    }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : 'تعذر تحميل الملف.')
-    })
-    return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl) }
-  }, [token, mediaId])
-
-  if (error) return <p className="form-error" role="alert">{alt}: {error}</p>
-  if (!url) return <p role="status">جارٍ تحميل {alt}...</p>
-  if (mediaType === 'Image') return <img alt={alt} className="preview-media__image" src={url} />
-  if (mediaType === 'Video') return <video className="preview-media__player" controls src={url} />
-  return <audio className="preview-media__player" controls src={url} />
-}
-
 export function InvitationPreviewPage() {
   const [token] = useState(previewToken)
   const [comment, setComment] = useState('')
+  const [mediaUrls, setMediaUrls] = useState<Record<number, string>>({})
+  const [mediaErrors, setMediaErrors] = useState<Record<number, string>>({})
   const previewQuery = useQuery({ queryKey: ['private-invitation-preview', token], queryFn: () => getPreviewInvitation(token), enabled: Boolean(token), retry: false })
   const reviewMutation = useMutation({
     mutationFn: (action: 'Approved' | 'ChangesRequested') => sendPreviewReview(token, action, comment),
     onSuccess: () => setComment(''),
   })
+
+  useEffect(() => {
+    let active = true
+    const objectUrls: string[] = []
+    setMediaUrls({})
+    setMediaErrors({})
+    for (const media of previewQuery.data?.media ?? []) {
+      void getPreviewMedia(token, media.mediaId).then((url) => {
+        if (!active) {
+          URL.revokeObjectURL(url)
+          return
+        }
+        objectUrls.push(url)
+        setMediaUrls((current) => ({ ...current, [media.mediaId]: url }))
+      }).catch((reason: unknown) => {
+        if (active) setMediaErrors((current) => ({
+          ...current,
+          [media.mediaId]: reason instanceof Error ? reason.message : 'تعذر تحميل الملف.',
+        }))
+      })
+    }
+    return () => {
+      active = false
+      objectUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [previewQuery.data, token])
 
   function requestChanges(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -53,16 +59,37 @@ export function InvitationPreviewPage() {
   if (previewQuery.isError) return <section className="preview-page" dir="rtl"><h1>تعذر فتح المعاينة</h1><p className="form-error" role="alert">{previewQuery.error.message}</p><p>قد يكون الرابط منتهيًا أو تم استبداله برابط جديد. تواصل مع فريق WedLink للحصول على رابط آخر.</p></section>
 
   const invitation = previewQuery.data
-  const customizationEntries = Object.entries(invitation.customizations ?? {}).filter(([, value]) => value !== null && value !== '')
-  const featureNames = new Map(invitation.features.map((feature) => [feature.key, feature.name]))
-  return <section className="preview-page" dir="rtl">
-    <header className="preview-hero"><p className="page-card__eyebrow">معاينة خاصة · {invitation.templateName} · إصدار {invitation.templateVersionNumber}</p><h1>{invitation.brideName} & {invitation.groomName}</h1>
-      {invitation.weddingDateTimeLocal && <p>{new Intl.DateTimeFormat('ar-EG', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(invitation.weddingDateTimeLocal))}</p>}
-      {invitation.venueName && <h2>{invitation.venueName}</h2>}{invitation.venueAddress && <p>{invitation.venueAddress}</p>}
-      {invitation.locationUrl && <a href={invitation.locationUrl} rel="noreferrer" target="_blank">عرض الموقع</a>}
-    </header>
-    {customizationEntries.length > 0 && <section className="preview-content"><h2>تفاصيل الدعوة</h2><dl className="preview-customizations">{customizationEntries.map(([key, value]) => <div key={key}><dt>{featureNames.get(key) ?? key}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd></div>)}</dl></section>}
-    {invitation.media.length > 0 && <section className="preview-content"><h2>الصور والوسائط</h2><div className="preview-gallery">{invitation.media.map((media) => <figure className="preview-media" key={media.mediaId}><PrivateMedia token={token} mediaId={media.mediaId} mediaType={media.mediaType} alt={media.originalFileName} /><figcaption>{media.originalFileName}</figcaption></figure>)}</div></section>}
+  const media = invitation.media.flatMap((item) => mediaUrls[item.mediaId]
+    ? [{ ...item, url: mediaUrls[item.mediaId] }]
+    : [])
+  const previewItem: PublicInvitation = {
+    eventEnded: false,
+    hasFinalPng: false,
+    rendererKey: invitation.rendererKey,
+    templateName: invitation.templateName,
+    brideName: invitation.brideName,
+    groomName: invitation.groomName,
+    weddingDateTimeLocal: invitation.weddingDateTimeLocal,
+    timeZoneId: invitation.timeZoneId,
+    venueName: invitation.venueName,
+    venueAddress: invitation.venueAddress,
+    locationUrl: invitation.locationUrl,
+    customizations: invitation.customizations,
+    features: invitation.features,
+    media,
+  }
+  const templateProps = { item: previewItem, slug: '', guests: undefined, previewMode: true }
+  const pendingMediaCount = invitation.media.length - media.length
+
+  return <main className="preview-page preview-page--template" dir="rtl">
+    <header className="preview-template-banner"><p className="page-card__eyebrow">معاينة خاصة · {invitation.templateName} · إصدار {invitation.templateVersionNumber}</p><p>هذا هو شكل القالب قبل النشر. الدعوة ما زالت خاصة.</p></header>
+    {pendingMediaCount > 0 && <p className="preview-template-media-state" role="status">جارٍ تحميل {pendingMediaCount} من ملفات الدعوة...</p>}
+    {Object.entries(mediaErrors).map(([mediaId, message]) => <p className="form-error" role="alert" key={mediaId}>تعذر تحميل أحد ملفات المعاينة: {message}</p>)}
+    <div className="preview-template-shell">
+      {invitation.rendererKey === 'editorial-luxury'
+        ? <EditorialLuxuryTemplate {...templateProps} />
+        : <DefaultInvitationTemplate {...templateProps} />}
+    </div>
     <section className="preview-content preview-feedback"><h2>رأيك في الدعوة</h2><p>يمكنك اعتماد المعاينة أو إرسال ملاحظاتك لفريق WedLink.</p>
       <form className="customer-form" onSubmit={requestChanges}><label htmlFor="preview-comment">التعديلات المطلوبة</label><textarea id="preview-comment" maxLength={2000} rows={4} required value={comment} onChange={(event) => setComment(event.target.value)} />
         {reviewMutation.isError && <p className="form-error" role="alert">{reviewMutation.error.message}</p>}
@@ -70,5 +97,5 @@ export function InvitationPreviewPage() {
         {reviewMutation.isSuccess && <p className="success-message" role="status">تم تسجيل مراجعتك وإبلاغ فريق WedLink.</p>}
       </form>
     </section>
-  </section>
+  </main>
 }

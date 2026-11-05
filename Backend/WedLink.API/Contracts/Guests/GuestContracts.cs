@@ -4,7 +4,7 @@ using WedLink.Business.Guests;
 namespace WedLink.API.Contracts.Guests;
 
 public sealed record GuestRsvpRequest([Required] string Response, [StringLength(150)] string? GuestName,
-    [Range(0, int.MaxValue - 1)] int AccompanyingPeople, [StringLength(100)] string? EditToken);
+    [Range(0, int.MaxValue)] int AccompanyingPeople, [StringLength(100)] string? EditToken);
 public sealed record GuestRsvpResponse(int RsvpResponseId, string Response, string? GuestName, int AccompanyingPeople,
     long ExpectedAttendance, DateTimeOffset SubmittedAt, DateTimeOffset? UpdatedAt, string EditToken, bool IsUpdate)
 {

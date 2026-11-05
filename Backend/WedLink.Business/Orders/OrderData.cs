@@ -146,6 +146,11 @@ public interface IOrderRepository
         DateTimeOffset changedAt,
         CancellationToken cancellationToken = default);
 
+    Task<bool> SoftDeleteAsync(
+        int orderId,
+        DateTimeOffset deletedAt,
+        CancellationToken cancellationToken = default);
+
     Task<OrderBalanceData?> GetBalanceAsync(
         int orderId,
         CancellationToken cancellationToken = default);

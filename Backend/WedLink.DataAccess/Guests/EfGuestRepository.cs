@@ -88,6 +88,17 @@ public sealed class EfGuestRepository(WedLinkDbContext db) : IGuestRepository
         return true;
     }
 
+    public async Task<bool> RestoreMessageAsync(int invitationId, int messageId, CancellationToken cancellationToken = default)
+    {
+        var row = await db.GuestMessages.FirstOrDefaultAsync(item => item.InvitationId == invitationId
+            && item.GuestMessageId == messageId && item.DeletedAt != null, cancellationToken);
+        if (row is null) return false;
+        row.DeletedAt = null;
+        row.DeletedByAdminUserId = null;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<IReadOnlyList<MusicTrackData>> GetMusicTracksAsync(bool activeOnly, CancellationToken cancellationToken = default) =>
         await db.MusicTracks.AsNoTracking().Where(item => !activeOnly || item.IsActive).OrderBy(item => item.Title)
             .Select(item => new MusicTrackData(item.MusicTrackId, item.Title, item.Artist, item.RightsReference, item.ContentType, item.IsActive))
@@ -117,7 +128,7 @@ public sealed class EfGuestRepository(WedLinkDbContext db) : IGuestRepository
     {
         var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
             && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
-        if (invitation is null || invitation.Status is "Published" or "Paused" or "Expired") return false;
+        if (invitation is null || invitation.Status is "Published" or "Expired") return false;
         if (!await IsFeatureEnabledAsync(invitation.TemplateVersionId, "music", cancellationToken)) return false;
         MusicTrack? track = null;
         if (musicTrackId is int id)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { deleteSubmissionMedia, getCurrentSubmission, saveCurrentSubmission, uploadSubmissionMedia } from './submissionApi'
 
@@ -27,7 +27,6 @@ export function CustomerSubmissionPage() {
   const [customizations, setCustomizations] = useState<Record<string, string>>({})
   const [file, setFile] = useState<File | null>(null)
   const submissionQuery = useQuery({ queryKey: ['current-customer-submission', token], queryFn: () => getCurrentSubmission(token), enabled: Boolean(token), retry: false })
-  const featureList = useMemo(() => submissionQuery.data?.availableFeatures ?? [], [submissionQuery.data])
 
   useEffect(() => {
     const data = submissionQuery.data
@@ -70,7 +69,6 @@ export function CustomerSubmissionPage() {
       <label htmlFor="submission-venue">اسم المكان (اختياري)</label><input id="submission-venue" maxLength={200} value={venueName} onChange={(event) => setVenueName(event.target.value)} />
       <label htmlFor="submission-address">عنوان المكان (اختياري)</label><textarea id="submission-address" maxLength={500} rows={2} value={venueAddress} onChange={(event) => setVenueAddress(event.target.value)} />
       <label htmlFor="submission-location">رابط الموقع (اختياري)</label><input id="submission-location" maxLength={1000} type="url" value={locationUrl} onChange={(event) => setLocationUrl(event.target.value)} />
-      {featureList.length > 0 && <><h3>تفضيلات القالب</h3><p>هذه الخيارات مدعومة في القالب المختار للطلب.</p>{featureList.map((feature) => <div key={feature.key}><label htmlFor={`custom-${feature.key}`}>{feature.name}</label><input id={`custom-${feature.key}`} value={customizations[feature.key] ?? ''} onChange={(event) => setCustomizations((items) => ({ ...items, [feature.key]: event.target.value }))} /><small>{feature.description ?? ''}{feature.maximumCount ? ` · الحد ${feature.maximumCount}` : ''}</small></div>)}</>}
       {saveMutation.isError && <p className="form-error" role="alert">{saveMutation.error.message}</p>}
       {saveMutation.isSuccess && <p className="success-message" role="status">تم حفظ بيانات الزفاف.</p>}
       <button className="primary-button" disabled={saveMutation.isPending} type="submit">{saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ بيانات الزفاف'}</button>

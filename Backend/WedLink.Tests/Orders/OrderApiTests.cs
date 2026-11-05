@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using WedLink.DataAccess.Persistence;
 using WedLink.Tests.Integration;
 
 namespace WedLink.Tests.Orders;
@@ -140,6 +143,56 @@ public sealed class OrderApiTests
             $"/api/v1/admin/orders/{created.OrderId}/status",
             new { status = "Cancelled", note = (string?)null });
         Assert.Equal(HttpStatusCode.BadRequest, terminalTransition.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteOrderHidesItAndPreservesPaymentAndStatusHistory()
+    {
+        using var factory = new WedLinkApiFactory();
+        using var client = await AdminApiTestClient.CreateLoggedInSuperAdminAsync(factory);
+        var fixture = await CreateCatalogFixtureAsync(client);
+        var createResponse = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Post,
+            "/api/v1/admin/orders", new
+            {
+                customerId = fixture.CustomerId,
+                selectedTemplateVersionId = fixture.TemplateVersionId,
+                agreedBasePrice = 1000m,
+                addOnIds = Array.Empty<int>()
+            });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var order = await createResponse.Content.ReadFromJsonAsync<OrderResponse>(JsonOptions);
+        Assert.NotNull(order);
+
+        var paymentResponse = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Post,
+            $"/api/v1/admin/orders/{order.OrderId}/payments",
+            new { amount = 200m, method = "Cash", reference = (string?)null, note = (string?)null });
+        Assert.Equal(HttpStatusCode.Created, paymentResponse.StatusCode);
+
+        var deleteResponse = await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Delete,
+            $"/api/v1/admin/orders/{order.OrderId}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var listResponse = await client.GetAsync("/api/v1/admin/orders?page=1&pageSize=10");
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var page = await listResponse.Content.ReadFromJsonAsync<OrderPageResponse>(JsonOptions);
+        Assert.NotNull(page);
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalItems);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await client.GetAsync($"/api/v1/admin/orders/{order.OrderId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await client.GetAsync($"/api/v1/admin/orders/{order.OrderId}/balance")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await AdminApiTestClient.SendSecureJsonAsync(client, HttpMethod.Delete,
+                $"/api/v1/admin/orders/{order.OrderId}")).StatusCode);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<WedLinkDbContext>();
+        var storedOrder = await db.Orders.SingleAsync(item => item.OrderId == order.OrderId);
+        Assert.NotNull(storedOrder.DeletedAt);
+        Assert.Equal(storedOrder.DeletedAt, storedOrder.UpdatedAt);
+        Assert.True(await db.OrderPayments.AnyAsync(item => item.OrderId == order.OrderId));
+        Assert.True(await db.OrderStatusHistory.AnyAsync(item => item.OrderId == order.OrderId));
     }
 
     [Fact]

@@ -116,6 +116,10 @@ export function changeOrderStatus(orderId: number, status: string): Promise<void
   return sendSecure(`/${orderId}/status`, 'PATCH', { status, note: null })
 }
 
+export function deleteOrder(orderId: number): Promise<void> {
+  return sendSecure(`/${orderId}`, 'DELETE')
+}
+
 export function recordOrderPayment(orderId: number, input: {
   amount: number
   method: string

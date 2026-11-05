@@ -78,6 +78,11 @@ public sealed class GuestsController(GuestService guests, ISubmissionFileStorage
     }
 
     [Authorize(Roles = "SuperAdmin")]
+    [HttpPost("admin/invitations/{invitationId:int}/messages/{messageId:int}/restore")]
+    public async Task<IActionResult> RestoreMessage(int invitationId, int messageId, CancellationToken cancellationToken) =>
+        await guests.RestoreMessageAsync(invitationId, messageId, cancellationToken) ? NoContent() : NotFound();
+
+    [Authorize(Roles = "SuperAdmin")]
     [HttpGet("admin/music-tracks")]
     public async Task<IActionResult> GetTracks(CancellationToken cancellationToken) =>
         Ok((await guests.GetMusicTracksAsync(false, cancellationToken)).Select(MusicTrackResponse.FromData));

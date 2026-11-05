@@ -39,7 +39,7 @@ Admin authentication setup: see [database setup](Documentation/Database/LocalSet
 
 ```powershell
 cd Frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -62,6 +62,7 @@ Build the frontend separately:
 ```powershell
 cd Frontend
 npm ci
+npm test
 npm run build
 ```
 

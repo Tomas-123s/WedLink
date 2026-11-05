@@ -139,8 +139,12 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
     public Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken cancellationToken = default) =>
         repository.GetPublicFinalPngAsync(slug, cancellationToken);
 
-    public async Task SetFinalPngAsync(int invitationId, string storageKey, CancellationToken cancellationToken = default) =>
-        ThrowLifecycleFailure(await repository.SetFinalPngAsync(invitationId, storageKey, timeProvider.GetUtcNow(), cancellationToken));
+    public async Task<string?> SetFinalPngAsync(int invitationId, string storageKey, CancellationToken cancellationToken = default)
+    {
+        var result = await repository.SetFinalPngAsync(invitationId, storageKey, timeProvider.GetUtcNow(), cancellationToken);
+        ThrowLifecycleFailure(result.Failure);
+        return result.ReplacedStorageKey;
+    }
 
     private static void ThrowLifecycleFailure(InvitationLifecycleFailure failure)
     {

@@ -8,7 +8,7 @@ export async function getPublicTemplates(): Promise<PublicTemplate[]> {
 }
 
 export function getWhatsAppUrl(message: string) {
-  const phone = (import.meta.env.VITE_PUBLIC_WHATSAPP_PHONE ?? '').replace(/\D/g, '')
+  const phone = (import.meta.env.VITE_PUBLIC_WHATSAPP_PHONE ?? '201210143454').replace(/\D/g, '')
   if (!phone) return null
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
 }

@@ -68,7 +68,7 @@ public sealed class InvitationLifecycleServiceTests
         public Task<InvitationLifecycleFailure> ExtendAsync(int id, DateTimeOffset now, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<PublicInvitationData?> GetPublicAsync(string slug, DateTimeOffset now, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<PublicMediaContentData?> GetPublicMediaAsync(string slug, int id, DateTimeOffset now, CancellationToken ct = default) => throw new NotImplementedException();
-        public Task<InvitationLifecycleFailure> SetFinalPngAsync(int id, string key, DateTimeOffset now, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<(InvitationLifecycleFailure Failure, string? ReplacedStorageKey)> SetFinalPngAsync(int id, string key, DateTimeOffset now, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<InvitationCardData?> GetFinalPngAsync(int id, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<InvitationCardData?> GetPublicFinalPngAsync(string slug, CancellationToken ct = default) => throw new NotImplementedException();
     }

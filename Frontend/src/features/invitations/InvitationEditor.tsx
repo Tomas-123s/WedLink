@@ -1,8 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createInvitationPreviewLink, downloadFinalInvitationCard, formatInvitationLocalDate, getInvitation, invitationAction, saveFinalInvitationCard, saveInvitation } from './invitationsApi'
+import { toBlob as captureNodeToBlob } from 'html-to-image'
+import { flushSync } from 'react-dom'
+import { createRoot } from 'react-dom/client'
+import { createInvitationPreviewLink, downloadFinalInvitationCard, getInvitation, getPreviewInvitation, getPreviewMedia, getPublicInvitation, invitationAction, saveFinalInvitationCard, saveInvitation, type PublicInvitation } from './invitationsApi'
 import { getMusicTracks, selectInvitationMusic } from './invitationsApi'
 import { GuestAdminPanel } from './GuestAdminPanel'
+import { DefaultInvitationTemplate, EditorialLuxuryTemplate } from './PublicInvitationTemplates'
 
 function localDateValue(value: string | null): string {
   return value ? value.slice(0, 16) : ''
@@ -25,9 +29,15 @@ function statusLabel(status: string | undefined): string {
 
 export function InvitationEditor({ orderId }: { orderId: number }) {
   const queryClient = useQueryClient()
-  const invitationQuery = useQuery({ queryKey: ['invitation', orderId], queryFn: () => getInvitation(orderId) })
+  const invitationQuery = useQuery({
+    queryKey: ['invitation', orderId],
+    queryFn: () => getInvitation(orderId),
+    refetchInterval: (query) => ['Draft', 'ChangesRequested'].includes(query.state.data?.status ?? '') ? 5000 : false,
+    refetchOnWindowFocus: 'always',
+  })
   const musicTracksQuery = useQuery({ queryKey: ['music-tracks'], queryFn: getMusicTracks,
     enabled: Boolean(invitationQuery.data?.features.some((feature) => feature.key === 'music' && feature.isEnabled)) })
+  const activeMusicTracks = musicTracksQuery.data?.filter((track) => track.isActive) ?? []
   const [brideName, setBrideName] = useState('')
   const [groomName, setGroomName] = useState('')
   const [weddingDateTimeLocal, setWeddingDateTimeLocal] = useState('')
@@ -70,12 +80,30 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   const cardMutation = useMutation({
     mutationFn: async () => {
       const item = invitationQuery.data!
-      const blob = await createInvitationCard({
-        brideName: item.brideName, groomName: item.groomName, weddingDateTimeLocal: item.weddingDateTimeLocal ?? '',
-        venueName: item.venueName ?? '', venueAddress: item.venueAddress ?? '', templateName: item.templateName,
-        customizations: Object.fromEntries(Object.entries(item.customizations ?? {}).map(([key, value]) => [key, String(value)])),
-      })
-      await saveFinalInvitationCard(item.invitationId!, blob)
+      let templateItem: PublicInvitation
+      const temporaryImageUrls: string[] = []
+      if (item.status === 'Published' && item.slug) {
+        templateItem = await getPublicInvitation(item.slug)
+      } else {
+        const previewLink = await createInvitationPreviewLink(orderId)
+        const previewUrl = new URL(previewLink.previewUrl, window.location.origin)
+        const token = new URLSearchParams(previewUrl.hash.slice(1)).get('token')
+        if (!token) throw new Error('تعذر تجهيز رابط معاينة لإنشاء البطاقة.')
+        const invitation = await getPreviewInvitation(token)
+        const media = await Promise.all(invitation.media.map(async (entry) => {
+          if (entry.mediaType !== 'Image') return { ...entry, url: '' }
+          const url = await getPreviewMedia(token, entry.mediaId)
+          temporaryImageUrls.push(url)
+          return { ...entry, url }
+        }))
+        templateItem = { ...invitation, eventEnded: false, hasFinalPng: item.hasFinalPng, media }
+      }
+      try {
+        const blob = await createInvitationCard(templateItem)
+        await saveFinalInvitationCard(item.invitationId!, blob)
+      } finally {
+        temporaryImageUrls.forEach((url) => URL.revokeObjectURL(url))
+      }
     },
     onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['invitation', orderId] }) },
   })
@@ -89,8 +117,24 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
     saveMutation.mutate()
   }
 
+  function moveSelectedImage(mediaId: number, direction: -1 | 1) {
+    const availableMedia = invitationQuery.data?.availableMedia ?? []
+    const imageIds = new Set(availableMedia.filter((media) => media.mediaType === 'Image').map((media) => media.mediaId))
+    setMediaIds((current) => {
+      const imagePositions = current.flatMap((id, index) => imageIds.has(id) ? [index] : [])
+      const imageOrder = imagePositions.map((index) => current[index])
+      const currentPosition = imageOrder.indexOf(mediaId)
+      const nextPosition = currentPosition + direction
+      if (currentPosition < 0 || nextPosition < 0 || nextPosition >= imageOrder.length) return current
+      ;[imageOrder[currentPosition], imageOrder[nextPosition]] = [imageOrder[nextPosition], imageOrder[currentPosition]]
+      const reordered = [...current]
+      imagePositions.forEach((index, position) => { reordered[index] = imageOrder[position] })
+      return reordered
+    })
+  }
+
   return <section className="customer-panel invitation-editor" dir="rtl">
-    <div className="list-heading"><div><h2>إعداد الدعوة ومعاينتها</h2><span>{invitationQuery.data?.templateName} · إصدار {invitationQuery.data?.templateVersionNumber}</span></div><span>الحالة: {statusLabel(invitationQuery.data?.status)}</span></div>
+    <div className="list-heading"><div><h2>إعداد الدعوة ومعاينتها</h2><span>{invitationQuery.data?.templateName} · إصدار {invitationQuery.data?.templateVersionNumber}</span></div><div className="form-actions"><span>الحالة: {statusLabel(invitationQuery.data?.status)}</span><button className="text-button" disabled={invitationQuery.isFetching} onClick={() => void invitationQuery.refetch()} type="button">{invitationQuery.isFetching ? 'جارٍ تحديث الحالة...' : 'تحديث الحالة'}</button></div></div>
     {invitationQuery.isPending && <p role="status">جارٍ تحميل إعدادات الدعوة...</p>}
     {invitationQuery.isError && <p className="form-error" role="alert">{invitationQuery.error.message}</p>}
     {invitationQuery.data && <form className="customer-form invitation-form" onSubmit={submit}>
@@ -101,13 +145,46 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
       <label htmlFor="invitation-address">عنوان المكان</label><textarea id="invitation-address" maxLength={500} rows={2} value={venueAddress} onChange={(event) => setVenueAddress(event.target.value)} />
       <label htmlFor="invitation-location">رابط الموقع</label><input id="invitation-location" maxLength={1000} type="url" value={locationUrl} onChange={(event) => setLocationUrl(event.target.value)} />
 
-      {invitationQuery.data.features.some((feature) => feature.isEnabled) && <><h3>تخصيصات القالب المدعومة</h3>{invitationQuery.data.features.filter((feature) => feature.isEnabled).map((feature) => <div key={feature.key}><label htmlFor={`invitation-feature-${feature.key}`}>{feature.key === 'countdown' ? 'رسالة ما بعد موعد الزفاف (اختياري)' : feature.name}</label><input id={`invitation-feature-${feature.key}`} placeholder={feature.key === 'countdown' ? 'تظهر عند حلول موعد الزفاف' : undefined} value={customizations[feature.key] ?? ''} onChange={(event) => setCustomizations((items) => ({ ...items, [feature.key]: event.target.value }))} /></div>)}</>}
-      {invitationQuery.data.features.some((feature) => feature.key === 'music' && feature.isEnabled) && <><label htmlFor="invitation-music-track">اختيار مسار من مكتبة الموسيقى</label><select id="invitation-music-track" disabled={musicMutation.isPending || ['Published', 'Paused', 'Expired'].includes(invitationQuery.data.status)} value={invitationQuery.data.musicTrackId ?? ''} onChange={(event) => musicMutation.mutate(event.target.value ? Number(event.target.value) : null)}><option value="">بدون موسيقى مكتبة</option>{musicTracksQuery.data?.filter((track) => track.isActive).map((track) => <option key={track.musicTrackId} value={track.musicTrackId}>{track.title}{track.artist ? ` · ${track.artist}` : ''}</option>)}</select>{musicMutation.isError && <p className="form-error">{musicMutation.error.message}</p>}</>}
+      {invitationQuery.data.features.some((feature) => feature.key === 'countdown' && feature.isEnabled) && <>
+        <h3>رسالة ما بعد موعد الزفاف</h3>
+        <label htmlFor="invitation-feature-countdown">رسالة تظهر بدل العد التنازلي بعد موعد الزفاف (اختياري)</label>
+        <input id="invitation-feature-countdown" placeholder="مثل: شكرًا لمشاركتنا فرحتنا" value={customizations.countdown ?? ''} onChange={(event) => setCustomizations((items) => ({ ...items, countdown: event.target.value }))} />
+      </>}
+      {invitationQuery.data.features.some((feature) => feature.key === 'music' && feature.isEnabled) && <>
+        <label htmlFor="invitation-music-track">اختيار مسار من مكتبة الموسيقى</label>
+        <select id="invitation-music-track" disabled={musicMutation.isPending || musicTracksQuery.isPending || activeMusicTracks.length === 0 || !invitationQuery.data.invitationId || ['Published', 'Expired'].includes(invitationQuery.data.status)} value={invitationQuery.data.musicTrackId ?? ''} onChange={(event) => musicMutation.mutate(event.target.value ? Number(event.target.value) : null)}>
+          <option value="">{musicTracksQuery.isPending ? 'جارٍ تحميل المسارات...' : activeMusicTracks.length ? 'بدون موسيقى مكتبة' : 'لا توجد مسارات نشطة'}</option>
+          {activeMusicTracks.map((track) => <option key={track.musicTrackId} value={track.musicTrackId}>{track.title}{track.artist ? ` · ${track.artist}` : ''}</option>)}
+        </select>
+        {musicTracksQuery.isError && <p className="form-error" role="alert">تعذر تحميل مكتبة الموسيقى: {musicTracksQuery.error.message}</p>}
+        {!musicTracksQuery.isPending && !musicTracksQuery.isError && activeMusicTracks.length === 0 && <p className="form-hint">أضف مسارًا مرخصًا وفعّله أولًا من <a href="/admin/music">مكتبة الموسيقى</a>.</p>}
+        {invitationQuery.data.status === 'Published' && <p className="form-hint">أوقف الرابط مؤقتًا أولًا لتغيير الموسيقى، ثم أعد تفعيله بعد الحفظ.</p>}
+        {invitationQuery.data.status === 'Paused' && <p className="form-hint">اختيار الموسيقى متاح والرابط موقوف. سيظل الرابط موقوفًا حتى تضغط «إعادة التفعيل».</p>}
+        {invitationQuery.data.status === 'Expired' && <p className="form-hint">انتهت صلاحية الرابط؛ لا يمكن تغيير الموسيقى.</p>}
+        {musicMutation.isError && <p className="form-error" role="alert">{musicMutation.error.message}</p>}
+      </>}
 
-      {invitationQuery.data.availableMedia.length > 0 && <><h3>الملفات التي ستظهر في المعاينة</h3>{invitationQuery.data.availableMedia.map((media) => <label className="checkbox-label" key={media.mediaId}><input checked={mediaIds.includes(media.mediaId)} type="checkbox" onChange={() => setMediaIds((items) => items.includes(media.mediaId) ? items.filter((id) => id !== media.mediaId) : [...items, media.mediaId])} /><span>{media.originalFileName} · {media.mediaType}</span></label>)}</>}
+      {invitationQuery.data.availableMedia.length > 0 && <>
+        <h3>الصور والوسائط التي ستظهر في الدعوة</h3>
+        <p className="invitation-media-order-hint">حدد الملفات، ثم استخدم السهمين لترتيب الصور في المعرض.</p>
+        <div className="invitation-media-order-list">{invitationQuery.data.availableMedia.map((media) => {
+          const isSelected = mediaIds.includes(media.mediaId)
+          const imagePosition = media.mediaType === 'Image' ? mediaIds.filter((id) => invitationQuery.data!.availableMedia.find((item) => item.mediaId === id)?.mediaType === 'Image').indexOf(media.mediaId) : -1
+          return <div className="invitation-media-order-row" key={media.mediaId}>
+            <label className="checkbox-label" htmlFor={`invitation-media-${media.mediaId}`}>
+              <input checked={isSelected} id={`invitation-media-${media.mediaId}`} type="checkbox" onChange={() => setMediaIds((items) => items.includes(media.mediaId) ? items.filter((id) => id !== media.mediaId) : [...items, media.mediaId])} />
+              <span>{media.originalFileName} · {media.mediaType}{imagePosition >= 0 && <small>ترتيب الصورة {imagePosition + 1}</small>}</span>
+            </label>
+            {imagePosition >= 0 && <div className="invitation-media-order-actions">
+              <button aria-label={`تقديم الصورة ${media.originalFileName}`} disabled={imagePosition === 0} onClick={() => moveSelectedImage(media.mediaId, -1)} title="تقديم الصورة" type="button">↑</button>
+              <button aria-label={`تأخير الصورة ${media.originalFileName}`} disabled={imagePosition === mediaIds.filter((id) => invitationQuery.data!.availableMedia.find((item) => item.mediaId === id)?.mediaType === 'Image').length - 1} onClick={() => moveSelectedImage(media.mediaId, 1)} title="تأخير الصورة" type="button">↓</button>
+            </div>}
+          </div>
+        })}</div>
+      </>}
 
       {saveMutation.isError && <p className="form-error" role="alert">{saveMutation.error.message}</p>}
-      {saveMutation.isSuccess && <p className="success-message" role="status">تم حفظ مسودة الدعوة.</p>}
+      {saveMutation.isSuccess && <p className="success-message" role="status">{saveMutation.data?.status === 'Draft' ? 'تم حفظ الدعوة كمسودة. لأن بياناتها تغيرت، أنشئ رابط معاينة جديدًا ليوافق العميل عليها قبل إنشاء البطاقة النهائية.' : 'تم حفظ الدعوة مع الاحتفاظ بموافقة العميل.'}</p>}
       <div className="form-actions"><button className="primary-button" disabled={saveMutation.isPending} type="submit">{saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</button><button className="secondary-button" disabled={saveMutation.isPending || previewMutation.isPending || !invitationQuery.data.invitationId} onClick={() => previewMutation.mutate()} type="button">{previewMutation.isPending ? 'جارٍ إنشاء الرابط...' : 'إنشاء رابط معاينة'}</button></div>
       {previewMutation.isError && <p className="form-error" role="alert">{previewMutation.error.message}</p>}
       {previewLink && <div className="submission-link-box"><p>الرابط خاص وصالح حتى {new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(previewLink.expiresAt))}. إنشاء رابط جديد يلغي السابق.</p><input aria-label="رابط معاينة الدعوة" readOnly value={previewLink.url} /><button className="secondary-button" onClick={() => navigator.clipboard.writeText(previewLink.url)} type="button">نسخ الرابط</button></div>}
@@ -117,7 +194,9 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
         {invitationQuery.data.status === 'Paused' && <><button className="primary-button" disabled={lifecycleMutation.isPending} onClick={() => lifecycleMutation.mutate('reactivate')} type="button">إعادة التفعيل</button><button className="secondary-button" disabled={lifecycleMutation.isPending} onClick={() => lifecycleMutation.mutate('extend')} type="button">تمديد شهر</button></>}
         {lifecycleMutation.isError && <p className="form-error" role="alert">{lifecycleMutation.error.message}</p>}
         {invitationQuery.data.slug && <div className="submission-link-box"><p>الرابط العام{invitationQuery.data.expiresAt ? ` · ينتهي ${new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(invitationQuery.data.expiresAt))}` : ''}</p><input aria-label="رابط الدعوة العامة" readOnly value={`${window.location.origin}/invite/${invitationQuery.data.slug}`} /><button className="secondary-button" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/invite/${invitationQuery.data.slug}`)} type="button">نسخ الرابط</button></div>}
-        {invitationQuery.data.hasFinalPng ? <a className="secondary-button invitation-card-download" href={downloadFinalInvitationCard(invitationQuery.data.invitationId)} download>تنزيل بطاقة PNG</a> : <button className="secondary-button" disabled={cardMutation.isPending || !['Approved', 'Published'].includes(invitationQuery.data.status)} onClick={() => cardMutation.mutate()} type="button">{cardMutation.isPending ? 'جارٍ إنشاء البطاقة...' : 'إنشاء وحفظ بطاقة PNG'}</button>}
+        {invitationQuery.data.hasFinalPng && <a className="secondary-button invitation-card-download" href={downloadFinalInvitationCard(invitationQuery.data.invitationId)} download>تنزيل بطاقة PNG</a>}
+        <button className="secondary-button" disabled={cardMutation.isPending || !['Approved', 'Paused', 'Published'].includes(invitationQuery.data.status)} onClick={() => cardMutation.mutate()} type="button">{cardMutation.isPending ? 'جارٍ تجهيز تصميم القالب...' : invitationQuery.data.hasFinalPng ? 'تحديث البطاقة حسب القالب' : 'إنشاء وحفظ بطاقة PNG'}</button>
+        {!['Approved', 'Paused', 'Published'].includes(invitationQuery.data.status) && <p className="form-hint">يتاح إنشاء البطاقة بعد موافقة العميل على المعاينة.</p>}
         {cardMutation.isError && <p className="form-error" role="alert">{cardMutation.error.message}</p>}
       </div>}
     </form>}
@@ -126,30 +205,66 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   </section>
 }
 
-async function createInvitationCard(data: { brideName: string; groomName: string; weddingDateTimeLocal: string; venueName: string; venueAddress: string; templateName: string; customizations: Record<string, string> }): Promise<Blob> {
-  const canvas = document.createElement('canvas')
-  canvas.width = 1200
-  canvas.height = 1600
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('تعذر تجهيز بطاقة الدعوة.')
-  context.fillStyle = '#fbf7f3'; context.fillRect(0, 0, 1200, 1600)
-  context.strokeStyle = '#b98c79'; context.lineWidth = 4; context.strokeRect(52, 52, 1096, 1496)
-  context.strokeStyle = '#e4cfc2'; context.lineWidth = 2; context.strokeRect(72, 72, 1056, 1456)
-  context.textAlign = 'center'; context.direction = 'rtl'
-  context.fillStyle = '#9a705d'; context.font = '700 32px Tahoma, Arial'; context.fillText('دعوة زفاف', 600, 260)
-  context.font = '40px Tahoma, Arial'; context.fillText('✦', 600, 350)
-  context.fillStyle = '#806052'; context.font = '32px Tahoma, Arial'; context.fillText('بكل الحب والفرح ندعوكم لمشاركتنا', 600, 470)
-  context.fillStyle = '#71495b'; context.font = '700 76px Tahoma, Arial'; context.fillText(data.brideName, 600, 650)
-  context.fillStyle = '#b98c79'; context.font = '44px Georgia, serif'; context.fillText('&', 600, 735)
-  context.fillStyle = '#71495b'; context.font = '700 76px Tahoma, Arial'; context.fillText(data.groomName, 600, 830)
-  context.fillStyle = '#806052'; context.font = '30px Tahoma, Arial'
-  if (data.weddingDateTimeLocal) context.fillText(formatInvitationLocalDate(data.weddingDateTimeLocal, 'Africa/Cairo', { dateStyle: 'full', timeStyle: 'short' }), 600, 1010)
-  if (data.venueName) context.fillText(data.venueName, 600, 1110)
-  context.font = '26px Tahoma, Arial'
-  if (data.venueAddress) context.fillText(data.venueAddress.slice(0, 75), 600, 1170)
-  const details = Object.values(data.customizations).map((value) => value.trim()).filter(Boolean).slice(0, 2)
-  context.font = '24px Tahoma, Arial'; details.forEach((value, index) => context.fillText(value.slice(0, 70), 600, 1250 + index * 42))
-  context.fillStyle = '#9a705d'; context.font = '26px Tahoma, Arial'; context.fillText(data.templateName, 600, 1400)
-  context.fillText('ننتظر حضوركم ومشاركتكم فرحتنا', 600, 1470)
-  return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('تعذر إنشاء صورة البطاقة.')), 'image/png'))
+async function createInvitationCard(item: PublicInvitation): Promise<Blob> {
+  const mount = document.createElement('div')
+  mount.className = 'preview-template-shell'
+  Object.assign(mount.style, {
+    position: 'fixed',
+    top: '0',
+    left: '-10000px',
+    width: `${Math.max(900, Math.min(window.innerWidth, 1440))}px`,
+    zIndex: '-1',
+    pointerEvents: 'none',
+  })
+  document.body.appendChild(mount)
+  const root = createRoot(mount)
+  try {
+    flushSync(() => root.render(item.rendererKey === 'editorial-luxury'
+      ? <EditorialLuxuryTemplate item={item} slug="" guests={undefined} previewMode />
+      : <DefaultInvitationTemplate item={item} slug="" guests={undefined} previewMode />))
+
+    const hero = await waitForCardElement(mount, '.editorial-luxury-hero, .public-invitation-hero')
+    await document.fonts.ready
+    const envelopeButton = mount.querySelector<HTMLButtonElement>('.editorial-luxury-open')
+    if (envelopeButton) {
+      envelopeButton.click()
+      await new Promise((resolve) => window.setTimeout(resolve, 4000))
+    }
+    await Promise.all(Array.from(hero.querySelectorAll('img')).map(waitForCardImage))
+    const blob = await captureNodeToBlob(hero, {
+      backgroundColor: item.rendererKey === 'editorial-luxury' ? '#151515' : '#fbf7f3',
+      pixelRatio: 2,
+      filter: (node) => !(node instanceof HTMLElement
+        && (node.classList.contains('editorial-luxury-hero__actions') || node.classList.contains('editorial-luxury-scroll-cue'))),
+    })
+    if (!blob) throw new Error('???? ????? ???? ??????? ?? ??????.')
+    return blob
+  } finally {
+    root.unmount()
+    mount.remove()
+  }
+}
+
+function waitForCardElement(container: HTMLElement, selector: string): Promise<HTMLElement> {
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now()
+    const check = () => {
+      const element = container.querySelector<HTMLElement>(selector)
+      if (element) { resolve(element); return }
+      if (Date.now() - startedAt > 15000) { reject(new Error('???? ????? ????? ?????? ?????? ???????.')); return }
+      window.setTimeout(check, 50)
+    }
+    check()
+  })
+}
+
+function waitForCardImage(image: HTMLImageElement): Promise<void> {
+  if (image.complete) {
+    return image.naturalWidth > 0 ? Promise.resolve() : Promise.reject(new Error('???? ????? ???? ?????? ?????? ???????.'))
+  }
+  return new Promise((resolve, reject) => {
+    image.addEventListener('load', () => resolve(), { once: true })
+    image.addEventListener('error', () => reject(new Error('???? ????? ???? ?????? ?????? ???????.')), { once: true })
+    window.setTimeout(() => reject(new Error('?????? ????? ???? ?????? ????? ??????.')), 15000)
+  })
 }

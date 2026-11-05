@@ -221,7 +221,9 @@ public sealed class InvitationsController(InvitationService invitations, ISubmis
         var key = await storage.SaveAsync(input, cancellationToken);
         try
         {
-            await invitations.SetFinalPngAsync(invitationId, key, cancellationToken);
+            var replacedStorageKey = await invitations.SetFinalPngAsync(invitationId, key, cancellationToken);
+            if (!string.IsNullOrEmpty(replacedStorageKey) && replacedStorageKey != key)
+                await storage.DeleteAsync(replacedStorageKey, cancellationToken);
             return NoContent();
         }
         catch (InvitationNotFoundException exception) { await storage.DeleteAsync(key, cancellationToken); return NotFoundProblem(exception.Message); }
