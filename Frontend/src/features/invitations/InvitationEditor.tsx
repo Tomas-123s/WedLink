@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toBlob as captureNodeToBlob } from 'html-to-image'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import { createInvitationPreviewLink, downloadFinalInvitationCard, getInvitation, getPreviewInvitation, getPreviewMedia, getPublicInvitation, invitationAction, saveFinalInvitationCard, saveInvitation, type PublicInvitation } from './invitationsApi'
+import { createInvitationPreviewLink, downloadFinalInvitationCard, getInvitation, getPreviewInvitation, getPreviewMedia, getPublicInvitation, invitationAction, saveFinalInvitationCard, saveInvitation, uploadInvitationMedia, type InvitationDraft, type PublicInvitation } from './invitationsApi'
 import { getMusicTracks, selectInvitationMusic } from './invitationsApi'
 import { GuestAdminPanel } from './GuestAdminPanel'
 import { DefaultInvitationTemplate, EditorialLuxuryTemplate } from './PublicInvitationTemplates'
@@ -46,6 +46,7 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   const [locationUrl, setLocationUrl] = useState('')
   const [customizations, setCustomizations] = useState<Record<string, string>>({})
   const [mediaIds, setMediaIds] = useState<number[]>([])
+  const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [previewLink, setPreviewLink] = useState<{ url: string; expiresAt: string } | null>(null)
 
   useEffect(() => {
@@ -68,6 +69,19 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
       locationUrl: locationUrl.trim() || null, customizations, mediaIds,
     }),
     onSuccess: async (data) => { queryClient.setQueryData(['invitation', orderId], data); setPreviewLink(null) },
+  })
+  const uploadMediaMutation = useMutation({
+    mutationFn: () => uploadInvitationMedia(orderId, mediaFile!),
+    onSuccess: (uploaded) => {
+      queryClient.setQueryData<InvitationDraft>(['invitation', orderId], (current) => current ? {
+        ...current,
+        availableMedia: [...current.availableMedia, uploaded],
+        selectedMediaIds: [...new Set([...current.selectedMediaIds, uploaded.mediaId])],
+      } : current)
+      setMediaFile(null)
+      const input = document.getElementById('invitation-media-upload') as HTMLInputElement | null
+      if (input) input.value = ''
+    },
   })
   const previewMutation = useMutation({
     mutationFn: () => createInvitationPreviewLink(orderId),
@@ -164,9 +178,18 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
         {musicMutation.isError && <p className="form-error" role="alert">{musicMutation.error.message}</p>}
       </>}
 
-      {invitationQuery.data.availableMedia.length > 0 && <>
+      {(invitationQuery.data.availableMedia.length > 0 || invitationQuery.data.features.some((feature) => ['gallery', 'video'].includes(feature.key) && feature.isEnabled)) && <>
         <h3>الصور والوسائط التي ستظهر في الدعوة</h3>
         <p className="invitation-media-order-hint">حدد الملفات، ثم استخدم السهمين لترتيب الصور في المعرض.</p>
+        {invitationQuery.data.features.some((feature) => ['gallery', 'video'].includes(feature.key) && feature.isEnabled) && <div className="invitation-media-upload">
+          <label htmlFor="invitation-media-upload">إضافة صورة أو فيديو من جهازك</label>
+          <div><input accept=".jpg,.jpeg,.png,.webp,.mp4" disabled={uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} id="invitation-media-upload" onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} type="file" />
+            <button className="secondary-button" disabled={!mediaFile || uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} onClick={() => uploadMediaMutation.mutate()} type="button">{uploadMediaMutation.isPending ? 'جارٍ رفع الملف...' : 'رفع وإضافة'}</button></div>
+          <small>الصور حتى 10MB والفيديو MP4 حتى 100MB. يمكنك رفع ملف بديل ثم إلغاء اختيار الملف القديم؛ تُطبّق حدود عدد الملفات عند حفظ الدعوة.</small>
+          {uploadMediaMutation.isError && <p className="form-error" role="alert">{uploadMediaMutation.error.message}</p>}
+          {uploadMediaMutation.isSuccess && <p className="success-message" role="status">تم رفع الملف وإضافته للاختيارات. اضغط «حفظ التعديلات» لنشره على الدعوة.</p>}
+          {invitationQuery.data.status === 'Expired' && <p className="form-hint">انتهت صلاحية الرابط؛ لا يمكن إضافة وسائط إلى هذه الدعوة.</p>}
+        </div>}
         <div className="invitation-media-order-list">{invitationQuery.data.availableMedia.map((media) => {
           const isSelected = mediaIds.includes(media.mediaId)
           const imagePosition = media.mediaType === 'Image' ? mediaIds.filter((id) => invitationQuery.data!.availableMedia.find((item) => item.mediaId === id)?.mediaType === 'Image').indexOf(media.mediaId) : -1
@@ -184,8 +207,9 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
       </>}
 
       {saveMutation.isError && <p className="form-error" role="alert">{saveMutation.error.message}</p>}
-      {saveMutation.isSuccess && <p className="success-message" role="status">{saveMutation.data?.status === 'Draft' ? 'تم حفظ الدعوة كمسودة. لأن بياناتها تغيرت، أنشئ رابط معاينة جديدًا ليوافق العميل عليها قبل إنشاء البطاقة النهائية.' : 'تم حفظ الدعوة مع الاحتفاظ بموافقة العميل.'}</p>}
-      <div className="form-actions"><button className="primary-button" disabled={saveMutation.isPending} type="submit">{saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</button><button className="secondary-button" disabled={saveMutation.isPending || previewMutation.isPending || !invitationQuery.data.invitationId} onClick={() => previewMutation.mutate()} type="button">{previewMutation.isPending ? 'جارٍ إنشاء الرابط...' : 'إنشاء رابط معاينة'}</button></div>
+      {saveMutation.isSuccess && <p className="success-message" role="status">{saveMutation.data?.status === 'Published' ? 'تم حفظ التعديلات وتحديث الدعوة على الرابط المنشور نفسه.' : saveMutation.data?.status === 'Paused' ? 'تم حفظ التعديلات. الرابط ما زال موقوفًا؛ أعد تفعيله عند الانتهاء.' : saveMutation.data?.status === 'Draft' ? 'تم حفظ الدعوة كمسودة. لأن بياناتها تغيرت، أنشئ رابط معاينة جديدًا ليوافق العميل عليها قبل إنشاء البطاقة النهائية.' : 'تم حفظ الدعوة مع الاحتفاظ بموافقة العميل.'}</p>}
+      <div className="form-actions"><button className="primary-button" disabled={saveMutation.isPending || uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} type="submit">{saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</button><button className="secondary-button" disabled={saveMutation.isPending || previewMutation.isPending || !invitationQuery.data.invitationId || ['Published', 'Expired'].includes(invitationQuery.data.status)} onClick={() => previewMutation.mutate()} type="button">{previewMutation.isPending ? 'جارٍ إنشاء الرابط...' : 'إنشاء رابط معاينة'}</button></div>
+      {['Published', 'Expired'].includes(invitationQuery.data.status) && <p className="form-hint">{invitationQuery.data.status === 'Published' ? 'الدعوة منشورة بالفعل؛ احفظ التعديلات لتظهر على الرابط العام، ولا تحتاج إلى رابط معاينة جديد.' : 'انتهت صلاحية الدعوة ولا يمكن إنشاء معاينة أو حفظ تعديلات.'}</p>}
       {previewMutation.isError && <p className="form-error" role="alert">{previewMutation.error.message}</p>}
       {previewLink && <div className="submission-link-box"><p>الرابط خاص وصالح حتى {new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(previewLink.expiresAt))}. إنشاء رابط جديد يلغي السابق.</p><input aria-label="رابط معاينة الدعوة" readOnly value={previewLink.url} /><button className="secondary-button" onClick={() => navigator.clipboard.writeText(previewLink.url)} type="button">نسخ الرابط</button></div>}
       {invitationQuery.data.invitationId && <div className="invitation-publish-tools"><h3>النشر والبطاقة النهائية</h3>

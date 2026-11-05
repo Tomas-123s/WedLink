@@ -684,6 +684,166 @@
   border: 0;
 }
 
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-page--template {
+  --el-color-background: #151515;
+  --el-color-surface: #242424;
+  --el-color-gold: #c6a66b;
+  --el-color-ivory: #f1e8d8;
+  --el-color-muted: #c9c0b3;
+  --el-color-border: rgb(198 166 107 / 34%);
+  --el-color-border-strong: #c6a66b;
+  --el-font-display: "Cormorant Garamond", "Amiri", "Traditional Arabic", Georgia, serif;
+  --el-font-body: Tahoma, Arial, sans-serif;
+  --el-border-radius: 2px;
+  background: #151515;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-template-banner {
+  padding: 1.8rem 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--el-color-border);
+  color: var(--el-color-muted);
+  background: var(--el-color-background);
+  text-align: center;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-template-banner .page-card__eyebrow {
+  margin: 0 0 .35rem;
+  color: var(--el-color-gold);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: none;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-template-banner__name {
+  margin: 0;
+  color: var(--el-color-ivory);
+  font: 400 clamp(1.5rem, 4vw, 2.2rem)/1.35 var(--el-font-display);
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-template-banner__name span,
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-template-banner > p:last-child {
+  color: var(--el-color-muted);
+  font: 400 .82rem/1.8 var(--el-font-body);
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback {
+  width: min(calc(100% - 2.5rem), 54rem);
+  margin: clamp(3rem, 8vw, 6rem) auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  border: 1px solid var(--el-color-border);
+  border-radius: var(--el-border-radius);
+  color: var(--el-color-ivory);
+  background: var(--el-color-surface);
+  box-shadow: 0 1.5rem 4rem #0005;
+  text-align: center;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__eyebrow {
+  margin: 0 0 .65rem;
+  color: var(--el-color-gold);
+  font-size: .72rem;
+  letter-spacing: .12em;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback h2 {
+  margin: 0;
+  color: var(--el-color-ivory);
+  font: 400 clamp(1.9rem, 5vw, 3rem)/1.25 var(--el-font-display);
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback > p:not(.preview-feedback__eyebrow) {
+  margin: .75rem 0 0;
+  color: var(--el-color-muted);
+  font-size: .9rem;
+  line-height: 1.9;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback .customer-form {
+  width: min(100%, 42rem);
+  margin: 1.8rem auto 0;
+  text-align: start;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback .customer-form > label {
+  color: var(--el-color-muted);
+  font-size: .8rem;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback textarea {
+  min-height: 7rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--el-color-border);
+  border-radius: var(--el-border-radius);
+  color: var(--el-color-ivory);
+  background: var(--el-color-background);
+  font: inherit;
+  resize: vertical;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback textarea:focus-visible {
+  border-color: var(--el-color-gold);
+  outline: 2px solid #c6a66b38;
+  outline-offset: 2px;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-top: .35rem;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__approve,
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__request {
+  min-height: 2.8rem;
+  padding: .65rem 1.25rem;
+  border-radius: var(--el-border-radius);
+  font: 500 .8rem var(--el-font-body);
+  transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__approve {
+  border: 1px solid var(--el-color-gold);
+  color: var(--el-color-background);
+  background: var(--el-color-gold);
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__approve:hover {
+  transform: translateY(-1px);
+  background: #d7b982;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__request {
+  border: 1px solid var(--el-color-border-strong);
+  color: var(--el-color-ivory);
+  background: transparent;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__request:hover {
+  border-color: var(--el-color-gold);
+  color: var(--el-color-gold);
+  background: #c6a66b12;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__status {
+  border-color: var(--el-color-border);
+  color: var(--el-color-gold);
+  background: #c6a66b12;
+}
+
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__approve:focus-visible,
+.app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__request:focus-visible {
+  outline: 2px solid var(--el-color-gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback { width: calc(100% - 1.25rem); }
+  .app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__actions { display: grid; grid-template-columns: 1fr; }
+  .app-shell:has(.preview-page--template .editorial-luxury-page) .preview-feedback__actions button { width: 100%; }
+}
+
 .editorial-luxury.editorial-luxury-page {
   --el-night: #151515;
   --el-night-soft: #242424;

@@ -96,13 +96,28 @@ public sealed class CustomerSubmissionService(
     {
         var orderId = await repository.GetOrderIdForTokenAsync(HashToken(token), DateTimeOffset.UtcNow, cancellationToken)
             ?? throw new SubmissionLinkException();
+        return await UploadForOrderAsync(orderId, filename, contentType, size, content, storage, cancellationToken, enforceMediaCount: true);
+    }
+
+    public Task<SubmissionMediaData> UploadForAdminAsync(
+        int orderId, string filename, string contentType, long size, Stream content,
+        ISubmissionFileStorage storage, CancellationToken cancellationToken = default)
+    {
+        if (orderId < 1) throw new SubmissionNotFoundException();
+        return UploadForOrderAsync(orderId, filename, contentType, size, content, storage, cancellationToken, enforceMediaCount: false);
+    }
+
+    private async Task<SubmissionMediaData> UploadForOrderAsync(
+        int orderId, string filename, string contentType, long size, Stream content,
+        ISubmissionFileStorage storage, CancellationToken cancellationToken, bool enforceMediaCount)
+    {
         var media = MediaFilePolicy.Validate(filename, contentType, size, content);
         var featureKey = media.Kind switch { "Image" => "gallery", "Video" => "video", "Audio" => "music", _ => "" };
         var featureLimit = await repository.GetMediaFeatureLimitAsync(orderId, featureKey, cancellationToken);
         if (featureLimit is null) throw new SubmissionValidationException("هذا النوع من الملفات غير متاح في القالب المختار.");
         if (featureLimit.MaximumFileSizeMb is int maximumMb && size > maximumMb * 1024L * 1024L)
             throw new SubmissionValidationException($"حجم الملف يتجاوز حد القالب ({maximumMb}MB).");
-        if (featureLimit.MaximumCount is int maximumCount
+        if (enforceMediaCount && featureLimit.MaximumCount is int maximumCount
             && await repository.GetActiveMediaCountAsync(orderId, media.Kind, cancellationToken) >= maximumCount)
             throw new SubmissionValidationException($"وصلت إلى الحد الأقصى لعدد ملفات {media.Kind} في القالب.");
         var usedBytes = await repository.GetActiveMediaBytesAsync(orderId, cancellationToken) ?? 0;

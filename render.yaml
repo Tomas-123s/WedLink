@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: wedlink-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Backend/WedLink.API/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ConnectionStrings__WedLinkDb
+        sync: false

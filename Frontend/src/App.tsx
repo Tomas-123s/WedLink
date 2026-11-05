@@ -53,15 +53,16 @@ function App() {
   const location = useLocation()
   const isPublicInvitation = location.pathname.startsWith('/invite/')
   const isPublicShowcase = location.pathname === '/' || location.pathname.startsWith('/designs/')
+  const isAdminArea = location.pathname.startsWith('/admin')
   return (
     <div className="app-shell">
       {!isPublicInvitation && !isPublicShowcase && <header className="site-header">
-        <Link className="site-brand" to="/admin">
+        <Link className="site-brand" to="/">
           WedLink
         </Link>
-        <nav aria-label="التنقل الرئيسي" className="site-nav">
-          <Link to="/">الرئيسية</Link>
-          <Link to="/admin">لوحة الإدارة</Link>
+        <nav aria-label="التبديل بين الموقع والإدارة" className="site-nav site-area-switch">
+          <Link aria-current={!isAdminArea ? 'page' : undefined} className={!isAdminArea ? 'is-current' : ''} to="/">الموقع</Link>
+          <Link aria-current={isAdminArea ? 'page' : undefined} className={isAdminArea ? 'is-current' : ''} to="/admin">الإدارة</Link>
         </nav>
       </header>}
 

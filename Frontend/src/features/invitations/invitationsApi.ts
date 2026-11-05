@@ -202,6 +202,21 @@ export function saveInvitation(orderId: number, input: {
   return secureSend(`${adminPath}/${orderId}/invitation`, 'PUT', input)
 }
 
+export async function uploadInvitationMedia(orderId: number, file: File): Promise<InvitationMedia> {
+  const csrfResponse = await fetch('/api/v1/admin/auth/csrf', { credentials: 'include' })
+  if (!csrfResponse.ok) throw new Error('تعذر تجهيز طلب آمن. حدّث الصفحة وحاول مرة أخرى.')
+  const { token } = await csrfResponse.json() as { token: string }
+  const body = new FormData()
+  body.set('file', file)
+  const response = await fetch(`/api/v1/admin/orders/${orderId}/customer-submission/media`, {
+    method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': token }, body,
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  const uploaded = await response.json() as { mediaId: number; originalFileName: string; contentType: string; sizeBytes: number; mediaKind: string }
+  return { mediaId: uploaded.mediaId, originalFileName: uploaded.originalFileName, contentType: uploaded.contentType,
+    sizeBytes: uploaded.sizeBytes, mediaType: uploaded.mediaKind, sortOrder: 0 }
+}
+
 export function createInvitationPreviewLink(orderId: number): Promise<{ previewUrl: string; expiresAt: string }> {
   return secureSend(`${adminPath}/${orderId}/invitation/preview-links`, 'POST')
 }

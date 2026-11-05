@@ -51,6 +51,24 @@ public sealed class CustomerSubmissionsController(
     }
 
     [Authorize(Roles = "SuperAdmin")]
+    [HttpPost("admin/orders/{orderId:int}/customer-submission/media")]
+    [RequestSizeLimit(110L * 1024 * 1024)]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadAdminMedia(int orderId, [FromForm] IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file is null) return ValidationProblem("اختر صورة أو فيديو لرفعه.");
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var media = await submissionService.UploadForAdminAsync(orderId, file.FileName, file.ContentType,
+                file.Length, stream, storage, cancellationToken);
+            return Ok(SubmissionMediaResponse.FromData(media));
+        }
+        catch (SubmissionNotFoundException exception) { return NotFoundProblem(exception.Message); }
+        catch (SubmissionValidationException exception) { return ValidationProblem(exception.Message); }
+    }
+
+    [Authorize(Roles = "SuperAdmin")]
     [HttpPost("admin/orders/{orderId:int}/customer-submission/review")]
     public async Task<IActionResult> MarkReviewed(int orderId, CancellationToken cancellationToken)
     {

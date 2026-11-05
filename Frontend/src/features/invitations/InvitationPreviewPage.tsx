@@ -82,7 +82,7 @@ export function InvitationPreviewPage() {
   const pendingMediaCount = invitation.media.length - media.length
 
   return <main className="preview-page preview-page--template" dir="rtl">
-    <header className="preview-template-banner"><p className="page-card__eyebrow">معاينة خاصة · {invitation.templateName} · إصدار {invitation.templateVersionNumber}</p><p>هذا هو شكل القالب قبل النشر. الدعوة ما زالت خاصة.</p></header>
+    <header className="preview-template-banner"><p className="page-card__eyebrow">معاينة خاصة</p><p className="preview-template-banner__name">{invitation.templateName} <span>· إصدار {invitation.templateVersionNumber}</span></p><p>شاهدوا الدعوة كما ستظهر لضيوفكم، ثم اعتمدوها أو أرسلوا ملاحظاتكم.</p></header>
     {pendingMediaCount > 0 && <p className="preview-template-media-state" role="status">جارٍ تحميل {pendingMediaCount} من ملفات الدعوة...</p>}
     {Object.entries(mediaErrors).map(([mediaId, message]) => <p className="form-error" role="alert" key={mediaId}>تعذر تحميل أحد ملفات المعاينة: {message}</p>)}
     <div className="preview-template-shell">
@@ -90,11 +90,11 @@ export function InvitationPreviewPage() {
         ? <EditorialLuxuryTemplate {...templateProps} />
         : <DefaultInvitationTemplate {...templateProps} />}
     </div>
-    <section className="preview-content preview-feedback"><h2>رأيك في الدعوة</h2><p>يمكنك اعتماد المعاينة أو إرسال ملاحظاتك لفريق WedLink.</p>
+    <section className="preview-content preview-feedback"><p className="preview-feedback__eyebrow">الخطوة الأخيرة</p><h2>هل أصبحت الدعوة كما تحبون؟</h2><p>اعتمدوا التصميم للانتقال للخطوة التالية، أو اكتبوا التعديلات المطلوبة.</p>
       <form className="customer-form" onSubmit={requestChanges}><label htmlFor="preview-comment">التعديلات المطلوبة</label><textarea id="preview-comment" maxLength={2000} rows={4} required value={comment} onChange={(event) => setComment(event.target.value)} />
         {reviewMutation.isError && <p className="form-error" role="alert">{reviewMutation.error.message}</p>}
-        <div className="form-actions"><button className="secondary-button" disabled={reviewMutation.isPending} type="submit">إرسال طلب تعديل</button><button className="primary-button" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate('Approved')} type="button">اعتماد الدعوة</button></div>
-        {reviewMutation.isSuccess && <p className="success-message" role="status">تم تسجيل مراجعتك وإبلاغ فريق WedLink.</p>}
+        <div className="form-actions preview-feedback__actions"><button className="preview-feedback__approve" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate('Approved')} type="button">{reviewMutation.isPending && reviewMutation.variables === 'Approved' ? 'جارٍ اعتماد الدعوة...' : 'اعتماد الدعوة'}</button><button className="preview-feedback__request" disabled={reviewMutation.isPending} type="submit">{reviewMutation.isPending && reviewMutation.variables === 'ChangesRequested' ? 'جارٍ إرسال الملاحظات...' : 'إرسال طلب تعديل'}</button></div>
+        {reviewMutation.isSuccess && <p className="preview-feedback__status" role="status">{reviewMutation.variables === 'Approved' ? 'تم اعتماد المعاينة وإبلاغ فريق WedLink.' : 'تم تسجيل ملاحظاتكم وإبلاغ فريق WedLink.'}</p>}
       </form>
     </section>
   </main>

@@ -32,7 +32,7 @@ public sealed record SaveInvitationInput(string BrideName, string GroomName, Dat
     string? CustomizationsJson, IReadOnlyList<int> MediaIds);
 
 public enum InvitationSaveFailure { None, OrderNotFound, InvitationLocked, MediaUnavailable, UnsupportedFeature }
-public sealed record InvitationSaveResult(InvitationData? Invitation, InvitationSaveFailure Failure);
+public sealed record InvitationSaveResult(InvitationData? Invitation, InvitationSaveFailure Failure, string? ReplacedFinalPngStorageKey = null);
 
 public interface IInvitationRepository
 {

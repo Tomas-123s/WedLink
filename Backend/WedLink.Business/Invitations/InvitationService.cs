@@ -5,7 +5,7 @@ using WedLink.Business.CustomerSubmissions;
 namespace WedLink.Business.Invitations;
 
 public sealed class InvitationService(IInvitationRepository repository, IPrivateLinkTokenGenerator tokenGenerator,
-    TimeProvider timeProvider, InvitationLifecycleSettings lifecycleSettings)
+    TimeProvider timeProvider, InvitationLifecycleSettings lifecycleSettings, ISubmissionFileStorage? storage = null)
 {
     private static readonly TimeSpan PreviewLifetime = TimeSpan.FromDays(14);
 
@@ -18,6 +18,7 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
         var groom = input.GroomName?.Trim() ?? string.Empty;
         if (bride.Length is < 1 or > 150 || groom.Length is < 1 or > 150)
             throw new InvitationValidationException("أدخل اسمي العروسين بحد أقصى 150 حرفًا لكل اسم.");
+        var details = await repository.GetForAdminAsync(orderId, cancellationToken) ?? throw new InvitationNotFoundException();
         var zoneId = string.IsNullOrWhiteSpace(input.TimeZoneId) ? "Africa/Cairo" : input.TimeZoneId.Trim();
         if (input.WeddingDateTimeLocal is null || input.WeddingDateTimeLocal.Value.Kind == DateTimeKind.Utc)
             throw new InvitationValidationException("أدخل موعد الزفاف بالتوقيت المحلي.");
@@ -26,13 +27,15 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
             var zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId);
             if (zone.IsInvalidTime(input.WeddingDateTimeLocal.Value) || zone.IsAmbiguousTime(input.WeddingDateTimeLocal.Value))
                 throw new InvitationValidationException("موعد الزفاف غير صالح للمنطقة الزمنية المختارة.");
-            if (input.WeddingDateTimeLocal.Value <= TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), zone).DateTime)
+            var keepingPublishedWeddingDate = (details.Status is "Published" or "Paused")
+                && details.WeddingDateTimeLocal == input.WeddingDateTimeLocal;
+            if (!keepingPublishedWeddingDate
+                && input.WeddingDateTimeLocal.Value <= TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), zone).DateTime)
                 throw new InvitationValidationException("موعد الزفاف يجب أن يكون في المستقبل.");
         }
         catch (TimeZoneNotFoundException) { throw new InvitationValidationException("المنطقة الزمنية غير مدعومة."); }
         catch (InvalidTimeZoneException) { throw new InvitationValidationException("المنطقة الزمنية غير صالحة."); }
 
-        var details = await repository.GetForAdminAsync(orderId, cancellationToken) ?? throw new InvitationNotFoundException();
         var customizationJson = NormalizeCustomizations(input.CustomizationsJson, details.Features);
         var selectedMedia = details.AvailableMedia.Where(item => input.MediaIds.Contains(item.MediaId)).ToArray();
         if (selectedMedia.Length != input.MediaIds.Distinct().Count())
@@ -61,15 +64,18 @@ public sealed class InvitationService(IInvitationRepository repository, IPrivate
             LocationUrl = location, CustomizationsJson = customizationJson,
             MediaIds = input.MediaIds.Distinct().ToArray()
         }, timeProvider.GetUtcNow(), cancellationToken);
-        return saveResult.Failure switch
+        var savedInvitation = saveResult.Failure switch
         {
             InvitationSaveFailure.None => saveResult.Invitation!,
             InvitationSaveFailure.OrderNotFound => throw new InvitationNotFoundException(),
-            InvitationSaveFailure.InvitationLocked => throw new InvitationValidationException("الدعوة المنشورة أو المنتهية لا يمكن تعديلها من مسار المعاينة."),
+            InvitationSaveFailure.InvitationLocked => throw new InvitationValidationException("انتهت صلاحية الدعوة؛ لا يمكن تعديل وسائطها أو محتواها."),
             InvitationSaveFailure.MediaUnavailable => throw new InvitationValidationException("تتضمن الملفات المختارة ملفًا غير متاح لهذا الطلب."),
             InvitationSaveFailure.UnsupportedFeature => throw new InvitationValidationException("القالب لا يدعم أحد أنواع الملفات المختارة."),
             _ => throw new InvalidOperationException("Unknown invitation save failure.")
         };
+        if (saveResult.ReplacedFinalPngStorageKey is not null && storage is not null)
+            await storage.DeleteAsync(saveResult.ReplacedFinalPngStorageKey, cancellationToken);
+        return savedInvitation;
     }
 
     public async Task<PreviewLinkData> CreatePreviewLinkAsync(int orderId, CancellationToken cancellationToken = default)

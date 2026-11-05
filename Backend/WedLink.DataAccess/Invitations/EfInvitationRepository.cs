@@ -264,7 +264,8 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
             };
             db.Invitations.Add(invitation);
         }
-        else if (invitation.Status is "Published" or "Paused" or "Expired" || invitation.FinalPngStorageKey is not null)
+        else if (invitation.Status == "Expired"
+            || ((invitation.Status is "Published" or "Paused") && invitation.ExpiresAt <= now))
         {
             return new(null, InvitationSaveFailure.InvitationLocked);
         }
@@ -288,8 +289,13 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
             .Where(item => item.InvitationId == invitation.InvitationId).ToListAsync(cancellationToken);
         var invitationMedia = await db.InvitationMedia
             .Where(item => item.InvitationId == invitation.InvitationId && item.DeletedAt == null).ToListAsync(cancellationToken);
-        var keepsApproval = invitation.Status == "Approved"
-            && HasSameApprovedContent(invitation, input, allowedMedia.Values, invitationMedia, existingCustomizations);
+        var orderedSelectedMedia = input.MediaIds.Select(mediaId => allowedMedia[mediaId]).ToArray();
+        var contentUnchanged = invitation.InvitationId > 0
+            && HasSameApprovedContent(invitation, input, orderedSelectedMedia, invitationMedia, existingCustomizations);
+        var keepsApproval = invitation.Status == "Approved" && contentUnchanged;
+        var remainsPublished = invitation.Status == "Published";
+        var remainsPaused = invitation.Status == "Paused";
+        var replacedFinalPngStorageKey = !contentUnchanged ? invitation.FinalPngStorageKey : null;
 
         invitation.CoupleNames = JsonSerializer.Serialize(new[] { input.BrideName, input.GroomName },
             new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
@@ -298,7 +304,8 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         invitation.VenueName = input.VenueName;
         invitation.VenueAddress = input.VenueAddress;
         invitation.LocationUrl = input.LocationUrl;
-        invitation.Status = keepsApproval ? "Approved" : "Draft";
+        invitation.Status = remainsPublished ? "Published" : remainsPaused ? "Paused" : keepsApproval ? "Approved" : "Draft";
+        if (!contentUnchanged) invitation.FinalPngStorageKey = null;
         invitation.UpdatedAt = now;
 
         if (existingCustomizations.Count > 0) db.InvitationCustomizations.RemoveRange(existingCustomizations);
@@ -343,7 +350,7 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
             });
         }
         await db.SaveChangesAsync(cancellationToken);
-        return new(await GetForAdminAsync(orderId, cancellationToken), InvitationSaveFailure.None);
+        return new(await GetForAdminAsync(orderId, cancellationToken), InvitationSaveFailure.None, replacedFinalPngStorageKey);
     }
 
     private static bool HasSameApprovedContent(Invitation invitation, SaveInvitationInput input,
