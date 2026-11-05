@@ -12,3 +12,5 @@ services:
       # The API runs on Render, so localhost and MonsterASP's Local string won't work.
       - key: ConnectionStrings__WedLinkDb
         sync: false
+      - key: Database__ApplyMigrationsOnStartup
+        value: "true"

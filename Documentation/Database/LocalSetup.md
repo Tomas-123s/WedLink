@@ -57,7 +57,7 @@ Invitation validity defaults to two calendar months after the wedding. Set `Invi
 
 تُحفظ ملفات التقديم والصور والموسيقى في جدول `StoredMediaFiles` بقاعدة البيانات، بينما تحتفظ جداول الوسائط بالبيانات الوصفية ومفتاح التخزين. يتطلب النشر تطبيق migration `StoreMediaInDatabase` قبل استخدام تخزين الملفات الجديد. الملفات القديمة المحفوظة على نظام الملفات لا تُنقل تلقائيًا، والملفات المفقودة تحتاج إلى رفعها مجددًا.
 
-في الإنتاج، يقرأ الـAPI قاعدة البيانات من متغير Render السري `ConnectionStrings__WedLinkDb`. لا يحتوي المستودع على بيانات اتصال MonsterASP. اربط هذا المتغير بسلسلة **Remote** من MonsterASP (مع `Encrypt=True`) لأن الـAPI يعمل على Render؛ فعّل Remote access في MonsterASP، واستخدم اسم المضيف العام. بعد توجيه الاتصال إلى قاعدة MonsterASP، طبّق عليها الترحيلات قبل استقبال الملفات. لا تضع كلمة المرور في ملفات المشروع أو Git.
+في الإنتاج، يقرأ الـAPI قاعدة البيانات من متغير Render السري `ConnectionStrings__WedLinkDb`. لا يحتوي المستودع على بيانات اتصال MonsterASP. اربط هذا المتغير بسلسلة **Remote** من MonsterASP (مع `Encrypt=True`) لأن الـAPI يعمل على Render؛ فعّل Remote access في MonsterASP، واستخدم اسم المضيف العام. يطبّق Render الترحيلات المعلقة عند بدء الـAPI عبر `Database__ApplyMigrationsOnStartup=true`. لا تضع كلمة المرور في ملفات المشروع أو Git.
 
 ## تشغيل الاختبارات
 
