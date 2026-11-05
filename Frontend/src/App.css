@@ -1115,6 +1115,106 @@
   .public-site *, .public-site *::before, .public-site *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
 
+/* Final narrow-screen refinements for the storefront and its template detail page. */
+@media (max-width: 600px) {
+  .public-site,
+  .demo-preview-page {
+    overflow-x: clip;
+  }
+
+  .public-site-header {
+    flex-wrap: nowrap;
+  }
+
+  .public-site-header .public-brand {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .public-site-header .public-brand small {
+    font-size: 9px;
+  }
+
+  .public-header-cta {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .public-design-card,
+  .public-design-art {
+    min-width: 0;
+  }
+
+  .public-design-art {
+    aspect-ratio: 0.9;
+  }
+
+  .public-preview-chip {
+    bottom: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 9px 11px;
+    font-size: 9px;
+  }
+
+  .demo-preview-nav {
+    min-height: 64px;
+    gap: 12px;
+  }
+
+  .demo-preview-nav > a:first-child {
+    font-size: 10px;
+  }
+
+  .demo-preview-nav .public-brand {
+    gap: 6px;
+    font-size: 16px;
+  }
+
+  .demo-preview-nav .public-brand small {
+    font-size: 9px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-preview-content {
+    padding-inline: 12px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-preview-copy {
+    padding-inline: 8px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-feature-showcase {
+    padding-top: 34px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-feature-showcase > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-feature-showcase article {
+    min-width: 0;
+    padding: 13px 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .public-site-header .public-brand {
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .public-header-cta {
+    padding: 9px;
+    font-size: 9px;
+  }
+
+  .demo-preview-page:has(.invitation-page-preview--editorial) .demo-preview-content {
+    padding-inline: 8px;
+  }
+}
+
 /* One consistent way to move between the public site and its workspace. */
 .public-admin-switch { display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:10px 13px; border:1px solid #ccd5e1; border-radius:3px; color:#314d78; background:#fffdf8; font-weight:700; white-space:nowrap; }
 .public-admin-switch:hover { border-color:#314d78; color:#fff; background:#314d78; }
