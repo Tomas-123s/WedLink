@@ -8,8 +8,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using WedLink.DataAccess.Identity;
 using WedLink.DataAccess.Persistence;
+using WedLink.API.Services;
 
 namespace WedLink.Tests.Integration;
 
@@ -25,12 +27,19 @@ public sealed class WedLinkApiFactory : WebApplicationFactory<Program>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:WedLinkDb"] =
-                    "Server=(local);Database=WedLinkTests;Integrated Security=True;"
+                    "Server=(local);Database=WedLinkTests;Integrated Security=True;",
+                ["PublicSite:BaseUrl"] = "https://public.example.test"
             });
         });
 
         builder.ConfigureTestServices(services =>
         {
+            foreach (var hostedService in services.Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                && descriptor.ImplementationType is not null
+                && (descriptor.ImplementationType == typeof(InvitationExpirationWorker)
+                    || descriptor.ImplementationType == typeof(MediaRetentionWorker))).ToArray())
+                services.Remove(hostedService);
+
             services.RemoveAll<DbContextOptions<WedLinkDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<WedLinkDbContext>>();
             services.RemoveAll<WedLinkDbContext>();

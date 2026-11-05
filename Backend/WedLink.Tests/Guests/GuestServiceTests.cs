@@ -21,6 +21,23 @@ public sealed class GuestServiceTests
     }
 
     [Fact]
+    public async Task NoResponseStoresNoCompanionsAndAnUpdateRecalculatesAttendance()
+    {
+        var repository = new FakeGuestRepository { Context = new GuestInvitationContext(7, true, 3, true, true, false) };
+        var service = new GuestService(repository, new FakeTokenGenerator(), TimeProvider.System);
+
+        var yes = await service.SubmitRsvpAsync("public-slug", null, new GuestRsvpInput("Yes", "Sara", 2));
+        Assert.Equal(3, yes.Response.ExpectedAttendance);
+
+        var no = await service.SubmitRsvpAsync("public-slug", yes.EditToken, new GuestRsvpInput("No", "Sara", 2));
+
+        Assert.True(no.IsUpdate);
+        Assert.True(repository.LastUpdateOnly);
+        Assert.Equal(0, repository.Saved!.AccompanyingPeople);
+        Assert.Equal(0, no.Response.ExpectedAttendance);
+    }
+
+    [Fact]
     public async Task SubmitRsvpRejectsDisabledRsvpInvalidResponseAndExcessGuests()
     {
         var repository = new FakeGuestRepository { Context = new GuestInvitationContext(7, false, 1, true, true, false) };
@@ -43,13 +60,15 @@ public sealed class GuestServiceTests
         public GuestInvitationContext Context { get; set; } = new(7, true, null, true, true, false);
         public GuestRsvpInput? Saved { get; private set; }
         public string? SavedHash { get; private set; }
+        public bool LastUpdateOnly { get; private set; }
         public Task<GuestInvitationContext?> GetPublicContextAsync(string slug, DateTimeOffset now, CancellationToken cancellationToken = default) => Task.FromResult<GuestInvitationContext?>(Context);
         public Task<IReadOnlyList<GuestMessageData>> GetPublicMessagesAsync(int invitationId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<GuestMessageData>>([]);
         public Task<long> GetExpectedAttendanceAsync(int invitationId, CancellationToken cancellationToken = default) => Task.FromResult(0L);
         public Task<GuestRsvpData?> SaveRsvpAsync(int id, string hash, bool update, GuestRsvpInput input, DateTimeOffset now, CancellationToken cancellationToken = default)
         {
-            Saved = input; SavedHash = hash;
-            return Task.FromResult<GuestRsvpData?>(new(1, input.Response, input.GuestName, input.AccompanyingPeople, 3, now, null));
+            Saved = input; SavedHash = hash; LastUpdateOnly = update;
+            var expectedAttendance = input.Response == "Yes" ? 1L + input.AccompanyingPeople : 0L;
+            return Task.FromResult<GuestRsvpData?>(new(1, input.Response, input.GuestName, input.AccompanyingPeople, expectedAttendance, now, null));
         }
         public Task<GuestRsvpSummaryData?> GetRsvpsForAdminAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult<GuestRsvpSummaryData?>(null);
         public Task<GuestMessageData?> AddMessageAsync(int id, GuestMessageInput input, DateTimeOffset now, CancellationToken cancellationToken = default) => Task.FromResult<GuestMessageData?>(null);

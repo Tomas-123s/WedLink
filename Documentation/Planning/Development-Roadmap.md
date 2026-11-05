@@ -131,9 +131,9 @@
 
 | المهمة | الهدف والمخرجات والملفات المتوقعة | الاعتماديات | القبول والاختبار المطلوب | التعقيد | الحالة |
 |---|---|---|---|---|---|
-| P12-T1 — استكمال Unit/Integration Tests | تغطية حساب الدفع، قواعد القوالب والإضافات، صلاحيات الحسابات، الروابط الخاصة، النشر والانتهاء، RSVP والحذف. مشاريع Tests للـBusiness والـAPI. | P3–P11 | كل قاعدة حرجة لها اختبار؛ CI محلي يعرض النتائج الفعلية بوضوح. تشغيل مجموعات الاختبار وتوثيق النتائج. | كبير | Partial; 36 tests pass; SQL Server expiration-query coverage remains |
+| P12-T1 — استكمال Unit/Integration Tests | تغطية حساب الدفع، قواعد القوالب والإضافات، صلاحيات الحسابات، الروابط الخاصة، النشر والانتهاء، RSVP والحذف. مشاريع Tests للـBusiness والـAPI. | P3–P11 | كل قاعدة حرجة لها اختبار؛ CI محلي يعرض النتائج الفعلية بوضوح. تشغيل مجموعات الاختبار وتوثيق النتائج. | كبير | 39 tests pass; read-only SQL Server repository acceptance test passes (opt-in); additional public API and RSVP/dashboard coverage passes |
 | P12-T2 — مراجعة الأمان والتجربة والأداء | مراجعة RTL وresponsive، التحقق والرفع وrate limits والـcookies والـCSRF وفتح الدعوات وسرعة الصفحات. | P2–P11 | لا أسرار في Git؛ لا ثغرة صلاحيات معروفة؛ أخطاء عربية مفهومة؛ فحص يدوي على أحجام شاشات متعددة. | كبير | Source review complete; browser viewport QA blocked by unavailable UI host |
-| P12-T3 — التوثيق والتسليم | تحديث README وAPI setup والبيئة والإطلاق والنسخ الاحتياطية ولقطات شاشة وحقوق الملكية. | P12-T1، P12-T2 | مطور جديد يستطيع الإعداد والتشغيل باتباع الوثائق؛ لا License مفتوح المصدر ولا بيانات خاصة منشورة. مراجعة خطوات من بيئة نظيفة. | متوسط | Docs updated; clean-machine and screenshot checks remain |
+| P12-T3 — التوثيق والتسليم | تحديث README وAPI setup والبيئة والإطلاق والنسخ الاحتياطية ولقطات شاشة وحقوق الملكية. | P12-T1، P12-T2 | مطور جديد يستطيع الإعداد والتشغيل باتباع الوثائق؛ لا License مفتوح المصدر ولا بيانات خاصة منشورة. مراجعة خطوات من بيئة نظيفة. | متوسط | Docs updated; clean npm ci blocked by Windows EPERM on locked Rolldown native binary; browser screenshots remain |
 
 ---
 
@@ -164,14 +164,14 @@
 
 ## P12 verification notes
 
-The local automated suite currently passes 36 tests. The browser access host was unavailable during this pass, so responsive visual checks and screenshots were not captured. The SQL Server-specific expiration batch query still needs a provider-backed test. These release checks remain open; no production deployment was attempted.
+Backend automated suite: 39 passed, 1 opt-in SQL Server test skipped in the default run. The provider-backed SQL Server acceptance test was separately enabled and passed against the configured local database; it reads the dashboard aggregate and executes the expiration query with a cutoff that expires no records. Frontend Vitest: 4 passed. Frontend build passed before clean-install verification. A clean `npm ci` attempt was blocked by Windows EPERM while unlinking a locked Rolldown native binary; it removed local frontend dependencies, so rerun install before any further frontend commands. Browser viewport screenshots and live WhatsApp crawler previews were not captured. No production deployment was attempted.
 
 # Phase P29 - Public Website and Design Showcase
 
 | Task | Deliverables | Status |
 |---|---|---|
 | P29-T1 - Public templates API | Anonymous listing of active templates with active versions; public feature metadata only; no package keys or customer data; activation/deactivation integration coverage | Complete; integration tests pass |
-| P29-T2 - Website and demo previews | Single public home at `/`, responsive design gallery and sample previews, service steps, configurable WhatsApp contact; admin remains protected at `/admin` | Implemented; frontend build passes; visual QA pending |
+| P29-T2 - Website and demo previews | Single public home at `/`, responsive design gallery and sample previews, service steps, configurable WhatsApp contact; admin remains protected at `/admin` | Implemented; frontend build passes; viewport visual QA remains |
 | P29-T3 - Security and delivery | Unsafe image URL filtering, environment-based contact configuration, and package-key non-disclosure checks | Complete; automated checks pass |
 
 # Phase P30 - Future Invitation Experience
@@ -180,9 +180,9 @@ These tasks record the supplied future requirements only. Do not implement them 
 
 | Task | Deliverables | Dependencies | Acceptance and validation | Status |
 |---|---|---|---|---|
-| P30-T1 - Visual-first template design workflow | Per-template concept, visual review/approval, layout/color/type/sections, then separate React template; mobile/desktop review; first concept is Cinematic | P4, P7, P29 | No implementation before approval; no invented Cinematic details; record approved assets/specification | Planned - visual specification pending |
-| P30-T2 - Template-specific motion | Optional motion capabilities per approved template, reduced-motion handling, purposeful performant animation | P30-T1 | Motion never hides event information; test mobile/desktop and reduced-motion; no animation assumed globally | Planned - visual specification pending |
+| P30-T1 - Visual-first template design workflow | Per-template concept, visual review/approval, layout/color/type/sections, then separate React template; mobile/desktop review; first concept is Cinematic | P4, P7, P29 | No implementation before approval; no invented Cinematic details; record approved assets/specification | Concept review file ready: `Documentation/Design/Cinematic-Concept-Review.html`; awaiting owner approval |
+| P30-T2 - Template-specific motion | Optional motion capabilities per approved template, reduced-motion handling, purposeful performant animation | P30-T1 | Motion never hides event information; test mobile/desktop and reduced-motion; no animation assumed globally | Motion direction included in Cinematic concept; implementation awaits approval |
 | P30-T3 - Dynamic invitation social metadata | Per-invitation title, description, suitable image, crawler-compatible rendering, expiration-safe fallback, cache refresh strategy | P7, P8, P29 | No private information in metadata; validate WhatsApp/common crawler previews and expired invitations | Implemented; backend and frontend builds pass; live crawler preview validation pending |
-| P30-T4 - Optional event countdown | Countdown based on actual local event date/time and time zone; template-configurable post-event message; independent of invitation expiration | P7, P10, P30-T1 | Correct event-time boundary, automatic transition, time-zone/DST coverage, and accessible reduced-motion presentation | Generic countdown and configurable message implemented; frontend build passes; boundary/DST validation and visual integration remain pending |
-| P30-T5 - Final RSVP attendance rule | Backend counts responding Yes guest plus entered companions; No has zero attendance and no companions; dashboard uses backend aggregate | P9, P11 | Unit/API tests for Yes/No, updates, totals, and dashboard aggregation; frontend cannot set final attendance | Backend aggregate and dashboard metric implemented; backend/frontend builds pass; RSVP and SQL aggregate acceptance coverage remains pending |
+| P30-T4 - Optional event countdown | Countdown based on actual local event date/time and time zone; template-configurable post-event message; independent of invitation expiration | P7, P10, P30-T1 | Correct event-time boundary, automatic transition, time-zone/DST coverage, and accessible reduced-motion presentation | Generic countdown and configurable message implemented; 4 Vitest cases pass for Cairo, Berlin DST, invalid dates/time zones; visual integration awaits template approval |
+| P30-T5 - Final RSVP attendance rule | Backend counts responding Yes guest plus entered companions; No has zero attendance and no companions; dashboard uses backend aggregate | P9, P11 | Unit/API tests for Yes/No, updates, totals, and dashboard aggregation; frontend cannot set final attendance | Backend aggregate and dashboard metric implemented; RSVP Yes/No/update/companion/dashboard API coverage passes; SQL Server dashboard aggregate query passes read-only acceptance |
 | P30-T6 - Public, invitation, and admin experience alignment | Preserve separate public marketing, invitation, and protected admin areas; Arabic RTL and responsive behavior | P29, P30-T1 | Verify public data isolation, responsive layouts, RTL, and role restrictions across all areas | Planned |
