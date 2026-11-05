@@ -204,6 +204,7 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
       <h2>{item.brideName}<i>و</i>{item.groomName}</h2>{date && <p className="editorial-luxury-closing__date">{date}</p>}
       <span className="editorial-luxury-closing__ornament" aria-hidden="true">❧</span>
       {contactUrl && <a className="editorial-luxury-contact-link" href={contactUrl} rel="noreferrer" target="_blank">للاستفسار عن الدعوة تواصلوا معنا عبر واتساب <span aria-hidden="true">↗</span></a>}
+      <InvitationDeveloperCredit className="editorial-luxury-developer-credit" />
     </footer>
   </article>
 }
@@ -256,8 +257,18 @@ export function DefaultInvitationTemplate({ item, slug, guests, previewMode = fa
     {galleryImages.length > 0 && <section className="public-invitation-section"><h2>لحظاتنا</h2><div className="public-invitation-gallery">{galleryImages.map((media) => <img key={media.mediaId} alt="صورة من الدعوة" loading="lazy" src={media.url} />)}</div></section>}
     {videos.map((media) => <section className="public-invitation-section" key={media.mediaId}><video controls playsInline preload="metadata" src={media.url} /></section>)}
     {previewMode ? <InvitationInteractionPreview enabledKeys={enabledKeys} /> : guests && <GuestInteractionsPanel slug={slug} data={guests} musicUrlOverride={guests.musicUrl ?? uploadedAudioUrl} />}
-    <footer className="public-invitation-footer">بكل الحب، ننتظر حضوركم ومشاركتكم فرحتنا</footer>
+    <footer className="public-invitation-footer">
+      <p>بكل الحب، ننتظر حضوركم ومشاركتكم فرحتنا</p>
+      <InvitationDeveloperCredit className="public-invitation-developer-credit" />
+    </footer>
   </article>
+}
+
+function InvitationDeveloperCredit({ className }: { className: string }) {
+  return <div className={className}>
+    <span>ENG.Tomas Samy</span>
+    <a href="tel:+201210143454" dir="ltr">01210143454</a>
+  </div>
 }
 
 function InvitationInteractionPreview({ enabledKeys, editorialLuxury = false }: { enabledKeys: Set<string>; editorialLuxury?: boolean }) {

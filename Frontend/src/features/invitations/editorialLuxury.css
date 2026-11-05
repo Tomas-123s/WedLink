@@ -1213,6 +1213,10 @@
 .editorial-luxury-closing h2 { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em; margin: .7rem 0; color: var(--el-ivory); font: 400 clamp(2.8rem, 8vw, 5.3rem)/1.3 var(--el-serif); }
 .editorial-luxury-closing h2 i { color: var(--el-champagne); font-size: .5em; font-weight: 400; align-self: center; }
 .editorial-luxury-closing__date { margin: 0; color: var(--el-champagne); }
+.editorial-luxury-developer-credit { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .35rem .8rem; margin-top: 1.2rem; padding-top: .8rem; border-top: 1px solid rgb(198 166 107 / 25%); color: rgb(241 232 216 / 64%); font: 500 .78rem/1.5 var(--el-sans); }
+.editorial-luxury-developer-credit a { color: var(--el-champagne); text-decoration: none; }
+.editorial-luxury-developer-credit a:hover { text-decoration: underline; }
+.editorial-luxury-developer-credit a:focus-visible { outline: 2px solid var(--el-champagne); outline-offset: 3px; }
 .editorial-luxury-closing__ornament { margin-top: 1.25rem; color: var(--el-champagne); font: 3rem var(--el-serif); }
 .editorial-luxury-contact-link { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1rem; padding: .8rem 1.15rem; border: 1px solid rgb(198 166 107 / 58%); color: var(--el-ivory); font-size: .9rem; text-decoration: none; transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
 .editorial-luxury-contact-link span { color: var(--el-champagne); }

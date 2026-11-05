@@ -820,6 +820,11 @@
 .public-invitation-gallery img, .public-invitation-section video { display: block; width: 100%; max-height: 520px; border-radius: 12px; object-fit: contain; background: #f7f5f2; }
 .public-invitation-section audio { width: 100%; }
 .public-invitation-footer { padding: 24px 12px; color: #806052; text-align: center; }
+.public-invitation-footer > p { margin: 0; }
+.public-invitation-developer-credit { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 18px; padding-top: 14px; border-top: 1px solid currentColor; color: #806052; font-size: .82rem; }
+.public-invitation-developer-credit a { color: inherit; text-decoration: none; }
+.public-invitation-developer-credit a:hover { text-decoration: underline; }
+.public-invitation-developer-credit a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .invitation-publish-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 16px; border-top: 1px solid #eee8e4; }
 .invitation-publish-tools h3 { flex-basis: 100%; }
 .invitation-card-download { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; border: 1px solid #d9cfd3; border-radius: 9px; background: #fff; text-decoration: none; }
