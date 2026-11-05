@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using WedLink.DataAccess.Identity;
 using WedLink.DataAccess.AdminAccounts;
 using WedLink.DataAccess.Customers;
@@ -26,6 +27,19 @@ using WedLink.Business.Audit;
 using WedLink.DataAccess.Audit;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Render terminates public HTTPS at its load balancer and forwards the request
+// to Kestrel over HTTP. Process its scheme header before HTTPS and secure-cookie
+// middleware so the app still recognizes the original request as HTTPS.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    if (builder.Environment.IsProduction())
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+});
 
 // Add services to the container.
 
@@ -204,6 +218,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
