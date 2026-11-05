@@ -45,14 +45,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var connectionString = builder.Configuration.GetConnectionString("WedLinkDb");
 
-if (string.IsNullOrWhiteSpace(connectionString))
+if (string.IsNullOrWhiteSpace(connectionString) && !builder.Environment.IsEnvironment("Testing"))
 {
     throw new InvalidOperationException(
         "Connection string 'WedLinkDb' is missing. Set it with user-secrets for local development.");
 }
 
 builder.Services.AddDbContext<WedLinkDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString ?? "Server=(local);Database=WedLinkTests;Integrated Security=True;"));
 
 builder.Services.AddScoped<IAdminAccountRepository, IdentityAdminAccountRepository>();
 builder.Services.AddScoped<AdminAccountService>();

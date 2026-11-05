@@ -14,6 +14,9 @@ public sealed class GuestService(IGuestRepository repository, IPrivateLinkTokenG
         if (guestName?.Length > 150) throw new GuestValidationException("الاسم يتجاوز 150 حرفًا.");
         if (input.AccompanyingPeople < 0)
             throw new GuestValidationException("عدد المرافقين يجب أن يكون رقمًا موجبًا صالحًا.");
+        if (input.Response == "Yes" && context.MaximumAccompanyingPeople is int maximumAccompanyingPeople
+            && input.AccompanyingPeople > maximumAccompanyingPeople)
+            throw new GuestValidationException("عدد المرافقين يتجاوز الحد المسموح لهذه الدعوة.");
         var isUpdate = !string.IsNullOrWhiteSpace(editToken);
         string rawToken;
         string hash;
