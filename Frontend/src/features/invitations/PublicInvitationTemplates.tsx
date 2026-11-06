@@ -116,6 +116,7 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
   }
 
   return <article className={`public-invitation editorial-luxury editorial-luxury-page${envelopeOpened ? ' is-invitation-open' : ''}`} dir="rtl" ref={pageRef}>
+    {invitationMusicUrl && <audio aria-hidden="true" className="guest-music__audio" loop muted={musicMuted} onPause={() => setMusicPlaying(false)} onPlay={() => setMusicPlaying(true)} preload="auto" ref={musicAudioRef} src={invitationMusicUrl} tabIndex={-1} />}
     <div className="editorial-luxury-petals editorial-luxury-petals--page" aria-hidden="true">
       {Array.from({ length: 12 }, (_, index) => <span className="editorial-luxury-falling-petal" key={`petal-${index}`} />)}
       {Array.from({ length: 6 }, (_, index) => <span className={`editorial-luxury-floating-flower editorial-luxury-floating-flower--${index + 1}`} key={`flower-${index}`}><FloralMark /><i>✿</i></span>)}
@@ -413,7 +414,7 @@ function GuestInteractionsPanel({ slug, data, editorialLuxury = false, musicAudi
       <button className="primary-button" disabled={rsvpMutation.isPending} type="submit">{rsvpMutation.isPending ? 'جارٍ الإرسال...' : 'حفظ الرد'}</button>
     </form></div>}
     {data.musicEnabled && (data.musicUrl || musicUrlOverride) && <div className={`guest-music ${groupClass}`}>
-      <audio aria-hidden="true" className="guest-music__audio" loop muted={activeMusicMuted} onPause={() => { onPlaybackChange?.(false); setLocalMusicPlaying(false) }} onPlay={() => { onPlaybackChange?.(true); setLocalMusicPlaying(true) }} preload="auto" ref={activeMusicAudioRef} src={musicUrlOverride ?? data.musicUrl ?? undefined} tabIndex={-1} />
+      {!musicAudioRef && <audio aria-hidden="true" className="guest-music__audio" loop muted={activeMusicMuted} onPause={() => { onPlaybackChange?.(false); setLocalMusicPlaying(false) }} onPlay={() => { onPlaybackChange?.(true); setLocalMusicPlaying(true) }} preload="auto" ref={activeMusicAudioRef} src={musicUrlOverride ?? data.musicUrl ?? undefined} tabIndex={-1} />}
       {musicControlVisible && <button aria-label={activeMusicPlaying && !activeMusicMuted ? 'كتم الموسيقى' : 'تشغيل الموسيقى'} aria-pressed={activeMusicMuted} className="guest-music__toggle" onClick={toggleMusic} type="button">
         <span aria-hidden="true">{activeMusicPlaying && !activeMusicMuted ? '♪' : '♪̸'}</span><span>{activeMusicPlaying && !activeMusicMuted ? 'كتم الموسيقى' : 'تشغيل الموسيقى'}</span>
       </button>}
