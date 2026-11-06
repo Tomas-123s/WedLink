@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Globalization;
 using System.Text.Encodings.Web;
 using WedLink.API.Contracts.Invitations;
 using WedLink.Business.CustomerSubmissions;
@@ -120,7 +121,7 @@ public sealed class InvitationsController(InvitationService invitations, ISubmis
             : $"دعوة زفاف {invitation.BrideName} و{invitation.GroomName}";
         var description = invitation.EventEnded
             ? "انتهى موعد هذه الدعوة. نتمنى للعروسين حياة مليئة بالفرح والسعادة."
-            : $"شاركونا فرحة زفاف {invitation.BrideName} و{invitation.GroomName}. افتحوا الدعوة لمعرفة التفاصيل وتأكيد الحضور.";
+            : BuildShareDescription(invitation);
 
         var html = $"""
 <!doctype html>
@@ -132,12 +133,28 @@ public sealed class InvitationsController(InvitationService invitations, ISubmis
 <meta property="og:locale" content="ar_EG"><meta property="og:title" content="{HtmlEncoder.Default.Encode(title)}">
 <meta property="og:description" content="{HtmlEncoder.Default.Encode(description)}">
 <meta property="og:url" content="{HtmlEncoder.Default.Encode(invitationUrl)}"><meta property="og:image" content="{HtmlEncoder.Default.Encode(shareImageUrl)}">
+<meta property="og:image:alt" content="{HtmlEncoder.Default.Encode(title)}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{HtmlEncoder.Default.Encode(title)}">
 <meta name="twitter:description" content="{HtmlEncoder.Default.Encode(description)}"><meta name="twitter:image" content="{HtmlEncoder.Default.Encode(shareImageUrl)}">
 <meta http-equiv="refresh" content="0;url={HtmlEncoder.Default.Encode(invitationUrl)}"></head>
 <body><p>جارٍ فتح الدعوة… <a href="{HtmlEncoder.Default.Encode(invitationUrl)}">افتح الدعوة</a></p><script>location.replace({System.Text.Json.JsonSerializer.Serialize(invitationUrl)});</script></body></html>
 """;
         return Content(html, "text/html; charset=utf-8");
+    }
+
+    private static string BuildShareDescription(PublicInvitationData invitation)
+    {
+        var details = new List<string>();
+        if (invitation.WeddingDateTimeLocal is DateTime weddingDate)
+        {
+            var formattedDate = weddingDate.ToString("dddd، d MMMM yyyy، h:mm tt", CultureInfo.GetCultureInfo("ar-EG"));
+            details.Add($"موعد الزفاف: {formattedDate}");
+        }
+        if (!string.IsNullOrWhiteSpace(invitation.VenueName))
+            details.Add($"المكان: {invitation.VenueName.Trim()}");
+
+        var eventDetails = details.Count > 0 ? $" {string.Join("، ", details)}." : string.Empty;
+        return $"شاركونا فرحة زفاف {invitation.BrideName} و{invitation.GroomName}.{eventDetails} افتحوا الدعوة لمعرفة التفاصيل وتأكيد الحضور.";
     }
 
     [AllowAnonymous]
