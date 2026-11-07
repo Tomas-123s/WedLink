@@ -68,7 +68,7 @@ export function OrdersPage() {
   })
 
   const activeVersions = useMemo(() => templatesQuery.data?.items.flatMap((template) =>
-    template.isActive ? template.versions.filter((version) => version.isActive).map((version) => ({ ...version, templateName: template.name })) : [],
+    template.isActive ? template.versions.filter((version) => version.isActive).map((version) => ({ ...version, templateName: template.name, templatePrice: template.currentPrice })) : [],
   ) ?? [], [templatesQuery.data])
   const selectedVersion = activeVersions.find((version) => String(version.templateVersionId) === versionId)
 
@@ -145,7 +145,7 @@ export function OrdersPage() {
               <option value="">اختر العميل</option>{customersQuery.data?.items.map((customer) => <option key={customer.customerId} value={customer.customerId}>{customer.name} — {customer.phone}</option>)}
             </select>
             <label htmlFor="order-version">القالب والإصدار</label>
-            <select id="order-version" onChange={(event) => { setVersionId(event.target.value); setAddOnIds([]) }} required value={versionId}>
+            <select id="order-version" onChange={(event) => { const chosen = activeVersions.find((version) => String(version.templateVersionId) === event.target.value); setVersionId(event.target.value); setBasePrice(chosen ? String(chosen.templatePrice) : ''); setAddOnIds([]) }} required value={versionId}>
               <option value="">اختر إصدارًا نشطًا</option>{activeVersions.map((version) => <option key={version.templateVersionId} value={version.templateVersionId}>{version.templateName} — {version.versionNumber}</option>)}
             </select>
             <label htmlFor="order-base-price">السعر الأساسي (جنيه مصري)</label>

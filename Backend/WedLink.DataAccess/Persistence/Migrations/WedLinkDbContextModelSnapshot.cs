@@ -1244,6 +1244,12 @@ namespace WedLink.DataAccess.Persistence.Migrations
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
+                    b.Property<decimal>("CurrentPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -1269,7 +1275,10 @@ namespace WedLink.DataAccess.Persistence.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Templates");
+                    b.ToTable("Templates", t =>
+                        {
+                            t.HasCheckConstraint("CK_Templates_CurrentPrice", "[CurrentPrice] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("WedLink.DataAccess.Templates.TemplateAddOn", b =>

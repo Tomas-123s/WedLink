@@ -79,7 +79,10 @@ public sealed class TemplateService(ITemplateCatalogRepository repository)
             throw new TemplateValidationException("أحد حقول القالب أطول من الحد المسموح.");
         }
 
-        return new TemplateInput(name, description, previewImage);
+        if (input.CurrentPrice < 0 || input.CurrentPrice > 99999999.99m || decimal.Round(input.CurrentPrice, 2) != input.CurrentPrice)
+            throw new TemplateValidationException("سعر القالب يجب أن يكون موجبًا أو صفرًا وبحد أقصى منزلتين عشريتين.");
+
+        return new TemplateInput(name, description, previewImage, input.CurrentPrice);
     }
 
     private static string? CleanOptional(string? value)

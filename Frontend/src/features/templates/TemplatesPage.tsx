@@ -24,6 +24,7 @@ const emptyTemplate: TemplateRequest = {
   name: '',
   description: '',
   previewImageReference: '',
+  currentPrice: 0,
 }
 
 const emptyAddOn: AddOnRequest = {
@@ -81,6 +82,7 @@ export function TemplatesPage() {
       name: selectedTemplate.name,
       description: selectedTemplate.description ?? '',
       previewImageReference: selectedTemplate.previewImageReference ?? '',
+      currentPrice: selectedTemplate.currentPrice,
     })
 
     const firstVersion = selectedTemplate.versions[0]
@@ -215,7 +217,7 @@ export function TemplatesPage() {
         <div>
           <p className="page-card__eyebrow">WedLink / الإدارة</p>
           <h1>القوالب والإضافات</h1>
-          <p>إدارة بيانات القوالب وإصداراتها ومزاياها وأسعار الإضافات.</p>
+          <p>إدارة بيانات القوالب وأسعارها وإصداراتها ومزاياها وإضافاتها.</p>
         </div>
       </div>
 
@@ -281,6 +283,17 @@ export function TemplatesPage() {
             onChange={(event) => setTemplateForm({ ...templateForm, previewImageReference: event.target.value })}
             type="url"
             value={templateForm.previewImageReference ?? ''}
+          />
+          <label htmlFor="template-price">سعر القالب (جنيه مصري)</label>
+          <input
+            id="template-price"
+            min="0"
+            max="99999999.99"
+            onChange={(event) => setTemplateForm({ ...templateForm, currentPrice: Number(event.target.value) })}
+            required
+            step="0.01"
+            type="number"
+            value={templateForm.currentPrice}
           />
           <div className="form-actions">
             <button className="primary-button" disabled={templateMutation.isPending} type="submit">

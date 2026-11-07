@@ -41,6 +41,7 @@ export interface Template {
   name: string
   description: string | null
   previewImageReference: string | null
+  currentPrice: number
   isActive: boolean
   createdAt: string
   updatedAt: string | null
@@ -59,6 +60,7 @@ export interface TemplateRequest {
   name: string
   description: string | null
   previewImageReference: string | null
+  currentPrice: number
 }
 
 export interface TemplateFeatureRequest {

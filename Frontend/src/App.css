@@ -922,6 +922,9 @@
 .public-preview-chip { position:absolute; z-index:2; bottom:22px; left:22px; padding:10px 13px; color:#38443d; background:#fffdf0e8; font-size:10px; }
 .public-design-info { display:flex; justify-content:space-between; align-items:center; padding:17px 1px 5px; }
 .public-design-info p { margin:0 0 6px; color:#a17c76; font-size:10px; }.public-design-info h3 { margin:0; font:400 22px Georgia,serif; }
+.public-design-title-price,.demo-preview-title-price { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.public-design-title-price>span,.demo-preview-title-price>span { color:#9b7442; font-size:13px; font-weight:600; white-space:nowrap; }
+.demo-preview-title-price h1 { margin:12px 0; }
 .public-design-open { width:34px; height:34px; display:grid; place-items:center; border:1px solid #d5d8d0; border-radius:50%; color:#46544c; text-decoration:none; }
 .public-design-description { min-height:42px; margin:7px 0 12px; color:var(--muted); font-size:12px; line-height:1.8; }
 .public-feature-list { display:flex; flex-wrap:wrap; gap:6px; }.public-feature-list span { padding:6px 8px; color:#59665d; background:#eff1eb; font-size:9px; }

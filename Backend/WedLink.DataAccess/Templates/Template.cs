@@ -10,6 +10,8 @@ public class Template
 
     public string? PreviewImageReference { get; set; }
 
+    public decimal CurrentPrice { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTimeOffset CreatedAt { get; set; }

@@ -6,9 +6,10 @@ namespace WedLink.API.Contracts.Templates;
 public sealed record TemplateRequest(
     [Required, StringLength(150)] string Name,
     [StringLength(1000)] string? Description,
-    [StringLength(500)] string? PreviewImageReference)
+    [StringLength(500)] string? PreviewImageReference,
+    [Range(typeof(decimal), "0", "99999999.99")] decimal CurrentPrice = 0)
 {
-    public TemplateInput ToInput() => new(Name, Description, PreviewImageReference);
+    public TemplateInput ToInput() => new(Name, Description, PreviewImageReference, CurrentPrice);
 }
 
 public sealed record TemplateStatusRequest(bool IsActive);
@@ -117,7 +118,8 @@ public sealed record TemplateResponse(
     bool IsActive,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    IReadOnlyList<TemplateVersionResponse> Versions)
+    IReadOnlyList<TemplateVersionResponse> Versions,
+    decimal CurrentPrice)
 {
     public static TemplateResponse FromData(TemplateData item) => new(
         item.TemplateId,
@@ -127,7 +129,8 @@ public sealed record TemplateResponse(
         item.IsActive,
         item.CreatedAt,
         item.UpdatedAt,
-        item.Versions.Select(TemplateVersionResponse.FromData).ToList());
+        item.Versions.Select(TemplateVersionResponse.FromData).ToList(),
+        item.CurrentPrice);
 }
 
 public sealed record TemplatePageResponse(

@@ -12,7 +12,7 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
     {
         var activeTemplates = await dbContext.Templates.AsNoTracking()
             .Where(t => t.IsActive && dbContext.TemplateVersions.Any(v => v.TemplateId == t.TemplateId && v.IsActive))
-            .OrderBy(t => t.Name).Select(t => new { t.TemplateId, t.Name, t.Description, t.PreviewImageReference })
+            .OrderBy(t => t.Name).Select(t => new { t.TemplateId, t.Name, t.Description, t.PreviewImageReference, t.CurrentPrice })
             .ToListAsync(cancellationToken);
         var templateIds = activeTemplates.Select(t => t.TemplateId).ToArray();
         var versions = await dbContext.TemplateVersions.AsNoTracking()
@@ -31,7 +31,8 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
             var version = selectedVersions.First(v => v.TemplateId == t.TemplateId);
             return new PublicTemplateData(t.TemplateId, t.Name, t.Description, t.PreviewImageReference,
                 version.VersionNumber, features.Where(f => f.TemplateVersionId == version.TemplateVersionId)
-                    .Select(f => new PublicTemplateFeatureData(f.Key, f.Name, f.Description, f.MaximumCount, f.MaximumFileSizeMb)).ToArray());
+                    .Select(f => new PublicTemplateFeatureData(f.Key, f.Name, f.Description, f.MaximumCount, f.MaximumFileSizeMb)).ToArray(),
+                t.CurrentPrice);
         }).ToArray();
     }
 
@@ -104,7 +105,8 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
             template.IsActive,
             template.CreatedAt,
             template.UpdatedAt,
-            versionDetails);
+            versionDetails,
+            template.CurrentPrice);
     }
 
     public async Task<TemplateData> CreateTemplateAsync(
@@ -117,6 +119,7 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
             Name = input.Name,
             Description = input.Description,
             PreviewImageReference = input.PreviewImageReference,
+            CurrentPrice = input.CurrentPrice,
             IsActive = true,
             CreatedAt = createdAt
         };
@@ -144,6 +147,7 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
         template.Name = input.Name;
         template.Description = input.Description;
         template.PreviewImageReference = input.PreviewImageReference;
+        template.CurrentPrice = input.CurrentPrice;
         template.UpdatedAt = updatedAt;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -467,7 +471,8 @@ public sealed class EfTemplateCatalogRepository(WedLinkDbContext dbContext)
                 version.IsActive,
                 version.CreatedAt,
                 [],
-                [])).ToList());
+                [])).ToList(),
+            template.CurrentPrice);
     }
 
     private static AddOnData ToData(AddOn addOn)

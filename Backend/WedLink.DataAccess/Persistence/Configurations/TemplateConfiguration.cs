@@ -20,6 +20,10 @@ public class TemplateConfiguration : IEntityTypeConfiguration<Template>
         builder.Property(template => template.PreviewImageReference)
             .HasMaxLength(500);
 
+        builder.Property(template => template.CurrentPrice)
+            .HasPrecision(18, 2)
+            .HasDefaultValue(0m);
+
         builder.Property(template => template.IsActive)
             .HasDefaultValue(true);
 
@@ -27,5 +31,8 @@ public class TemplateConfiguration : IEntityTypeConfiguration<Template>
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
         builder.HasIndex(template => template.Name);
+        builder.ToTable(table => table.HasCheckConstraint(
+            "CK_Templates_CurrentPrice",
+            "[CurrentPrice] >= 0"));
     }
 }

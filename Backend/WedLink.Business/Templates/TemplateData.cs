@@ -8,7 +8,8 @@ public sealed record TemplateData(
     bool IsActive,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    IReadOnlyList<TemplateVersionData> Versions);
+    IReadOnlyList<TemplateVersionData> Versions,
+    decimal CurrentPrice = 0);
 
 public sealed record TemplateVersionData(
     int TemplateVersionId,
@@ -41,7 +42,8 @@ public sealed record AddOnData(
 public sealed record TemplateInput(
     string Name,
     string? Description,
-    string? PreviewImageReference);
+    string? PreviewImageReference,
+    decimal CurrentPrice = 0);
 
 public sealed record TemplateVersionInput(string VersionNumber, string PackageKey);
 
@@ -64,7 +66,8 @@ public sealed record TemplatePage(
     int TotalItems);
 
 public sealed record PublicTemplateData(int TemplateId, string Name, string? Description,
-    string? PreviewImageReference, string VersionNumber, IReadOnlyList<PublicTemplateFeatureData> Features);
+    string? PreviewImageReference, string VersionNumber, IReadOnlyList<PublicTemplateFeatureData> Features,
+    decimal CurrentPrice = 0);
 public sealed record PublicTemplateFeatureData(string Key, string Name, string? Description, int? MaximumCount, int? MaximumFileSizeMb);
 
 public sealed class TemplateValidationException(string message) : Exception(message)

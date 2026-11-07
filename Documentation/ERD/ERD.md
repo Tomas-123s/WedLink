@@ -94,6 +94,7 @@ erDiagram
         string Name
         string Description "Optional"
         string PreviewImageReference "Optional"
+        decimal CurrentPrice
         bool IsActive
         datetime CreatedAt
         datetime UpdatedAt "Optional"

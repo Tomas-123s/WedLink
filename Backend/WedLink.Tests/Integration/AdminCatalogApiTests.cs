@@ -67,10 +67,11 @@ public sealed class AdminCatalogApiTests
             client,
             HttpMethod.Post,
             "/api/v1/admin/templates",
-            new { name = "Classic", description = "Classic invitation", previewImageReference = (string?)null });
+            new { name = "Classic", description = "Classic invitation", previewImageReference = (string?)null, currentPrice = 1250m });
         Assert.Equal(HttpStatusCode.Created, templateResponse.StatusCode);
         var template = await templateResponse.Content.ReadFromJsonAsync<TemplateResponse>(JsonOptions);
         Assert.NotNull(template);
+        Assert.Equal(1250m, template.CurrentPrice);
 
         var firstVersionResponse = await AdminApiTestClient.SendSecureJsonAsync(
             client,
@@ -162,6 +163,7 @@ public sealed class AdminCatalogApiTests
         Assert.Equal(HttpStatusCode.OK, publicResponse.StatusCode);
         var publicJson = await publicResponse.Content.ReadAsStringAsync();
         Assert.Contains("Classic", publicJson);
+        Assert.Contains("1250", publicJson);
         Assert.Contains("2.0", publicJson);
         Assert.Contains(features[0].Key, publicJson);
         Assert.DoesNotContain("packageKey", publicJson);
@@ -177,7 +179,7 @@ public sealed class AdminCatalogApiTests
 
     private sealed record CustomerResponse(int CustomerId, string Phone);
     private sealed record CustomerPageResponse(int TotalItems);
-    private sealed record TemplateResponse(int TemplateId);
+    private sealed record TemplateResponse(int TemplateId, decimal CurrentPrice);
     private sealed record TemplateVersionResponse(
         int TemplateVersionId,
         bool IsActive,

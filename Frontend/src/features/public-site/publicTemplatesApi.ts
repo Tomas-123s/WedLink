@@ -1,5 +1,5 @@
 export type PublicTemplateFeature = { key: string; name: string; description: string | null; maximumCount: number | null; maximumFileSizeMb: number | null }
-export type PublicTemplate = { templateId: number; name: string; description: string | null; previewImageUrl: string | null; versionNumber: string; features: PublicTemplateFeature[] }
+export type PublicTemplate = { templateId: number; name: string; description: string | null; previewImageUrl: string | null; versionNumber: string; currentPrice: number; features: PublicTemplateFeature[] }
 
 export async function getPublicTemplates(): Promise<PublicTemplate[]> {
   const response = await fetch('/api/v1/public/templates')
