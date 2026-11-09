@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/invite/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|MetaInspector).*"
+        }
+      ],
+      "destination": "https://wedlink-api.onrender.com/api/v1/public/invitations/:slug/share"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://wedlink-api.onrender.com/api/:path*"
     },
