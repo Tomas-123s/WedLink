@@ -25,7 +25,12 @@ function invitationContactUrl(brideName: string, groomName: string) {
 
 function shareInvitation(item: PublicInvitation, slug: string) {
   const url = new URL(`/api/v1/public/invitations/${encodeURIComponent(slug)}/share`, window.location.origin).toString()
-  if (navigator.share) return navigator.share({ title: `دعوة زفاف ${item.brideName} و${item.groomName}`, text: 'شاركوا فرحتنا وافتحوا تفاصيل الدعوة', url })
+  const details = [
+    item.weddingDateTimeLocal && `الموعد: ${weddingDate(item.weddingDateTimeLocal, item.timeZoneId)}`,
+    item.venueName && `المكان: ${item.venueName}`,
+  ].filter(Boolean)
+  const text = [`دعوة زفاف ${item.brideName} و${item.groomName}`, ...details, 'شاركوا فرحتنا'].join('\n')
+  if (navigator.share) return navigator.share({ title: `دعوة زفاف ${item.brideName} و${item.groomName}`, text, url })
   return navigator.clipboard.writeText(url)
 }
 
