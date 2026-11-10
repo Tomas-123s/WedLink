@@ -25,7 +25,7 @@ public sealed record InvitationMediaResponse(int MediaId, string MediaType, stri
 public sealed record PreviewReviewEventResponse(int EventId, string Source, string Action, string? Comment, string? AdminUserId, DateTimeOffset CreatedAt);
 
 public sealed record InvitationResponse(
-    int OrderId, int? InvitationId, int TemplateVersionId, int? MusicTrackId, string TemplateName, string TemplateVersionNumber,
+    int OrderId, int? InvitationId, int TemplateVersionId, int? MusicTrackId, string TemplateName, string TemplateVersionNumber, string RendererKey,
     string BrideName, string GroomName, DateTime? WeddingDateTimeLocal, string TimeZoneId,
     string? VenueName, string? VenueAddress, string? LocationUrl, JsonElement? Customizations,
     string Status, string Slug, DateTimeOffset? PublishedAt, DateTimeOffset? ExpiresAt, DateTimeOffset? PausedAt,
@@ -34,7 +34,7 @@ public sealed record InvitationResponse(
     IReadOnlyList<PreviewReviewEventResponse> ReviewEvents)
 {
     public static InvitationResponse FromData(InvitationData item) => new(item.OrderId, item.InvitationId,
-        item.TemplateVersionId, item.MusicTrackId, item.TemplateName, item.TemplateVersionNumber, item.BrideName, item.GroomName,
+        item.TemplateVersionId, item.MusicTrackId, item.TemplateName, item.TemplateVersionNumber, item.RendererKey, item.BrideName, item.GroomName,
         item.WeddingDateTimeLocal, item.TimeZoneId, item.VenueName, item.VenueAddress, item.LocationUrl,
         ParseCustomizations(item.CustomizationsJson), item.Status, item.Slug, item.PublishedAt, item.ExpiresAt, item.PausedAt, item.UpdatedAt, item.HasFinalPng,
         item.Features.Select(feature => new InvitationFeatureResponse(feature.Key, feature.Name, feature.IsEnabled, feature.MaximumCount, feature.MaximumFileSizeMb)).ToArray(),

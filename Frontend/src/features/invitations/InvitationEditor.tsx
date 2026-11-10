@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toBlob as captureNodeToBlob } from 'html-to-image'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import { createInvitationPreviewLink, downloadFinalInvitationCard, getInvitation, getPreviewInvitation, getPreviewMedia, getPublicInvitation, invitationAction, saveFinalInvitationCard, saveInvitation, uploadInvitationMedia, type InvitationDraft, type PublicInvitation } from './invitationsApi'
+import { createInvitationPreviewLink, downloadFinalInvitationCard, getAdminInvitationMedia, getInvitation, getPreviewInvitation, getPreviewMedia, getPublicInvitation, invitationAction, saveFinalInvitationCard, saveInvitation, uploadInvitationMedia, type InvitationDraft, type PublicInvitation } from './invitationsApi'
 import { getMusicTracks, selectInvitationMusic } from './invitationsApi'
 import { GuestAdminPanel } from './GuestAdminPanel'
 import { DefaultInvitationTemplate, EditorialLuxuryTemplate } from './PublicInvitationTemplates'
@@ -48,6 +48,39 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   const [mediaIds, setMediaIds] = useState<number[]>([])
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [previewLink, setPreviewLink] = useState<{ url: string; expiresAt: string } | null>(null)
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null)
+  const [heroImageError, setHeroImageError] = useState<string | null>(null)
+  const heroCropRef = useRef<HTMLDivElement>(null)
+  const heroDragRef = useRef<{ pointerId: number; startX: number; startY: number; positionX: number; positionY: number } | null>(null)
+  const heroImageId = mediaIds.find((id) => invitationQuery.data?.availableMedia.find((media) => media.mediaId === id)?.mediaType === 'Image')
+  const heroZoom = Math.min(200, Math.max(100, Number(customizations.heroZoom ?? 103) || 103))
+  const heroPositionXValue = Number(customizations.heroPositionX ?? 50)
+  const heroPositionYValue = Number(customizations.heroPositionY ?? 42)
+  const heroPositionX = Number.isFinite(heroPositionXValue) ? Math.min(100, Math.max(0, heroPositionXValue)) : 50
+  const heroPositionY = Number.isFinite(heroPositionYValue) ? Math.min(100, Math.max(0, heroPositionYValue)) : 42
+
+  useEffect(() => {
+    if (!heroImageId) {
+      setHeroImageUrl(null)
+      setHeroImageError(null)
+      return
+    }
+    let active = true
+    let objectUrl: string | null = null
+    setHeroImageUrl(null)
+    setHeroImageError(null)
+    void getAdminInvitationMedia(orderId, heroImageId).then((url) => {
+      objectUrl = url
+      if (active) setHeroImageUrl(url)
+      else URL.revokeObjectURL(url)
+    }).catch((reason: unknown) => {
+      if (active) setHeroImageError(reason instanceof Error ? reason.message : 'تعذر تحميل صورة المعاينة.')
+    })
+    return () => {
+      active = false
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [heroImageId, orderId])
 
   useEffect(() => {
     const item = invitationQuery.data
@@ -147,6 +180,32 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
     })
   }
 
+  function setHeroPosition(x: number, y: number) {
+    setCustomizations((items) => ({ ...items, heroPositionX: String(Math.round(Math.min(100, Math.max(0, x)))), heroPositionY: String(Math.round(Math.min(100, Math.max(0, y)))) }))
+  }
+
+  function startHeroDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return
+    heroDragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, positionX: heroPositionX, positionY: heroPositionY }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function moveHeroDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = heroDragRef.current
+    const bounds = heroCropRef.current?.getBoundingClientRect()
+    if (!drag || drag.pointerId !== event.pointerId || !bounds) return
+    setHeroPosition(drag.positionX - (event.clientX - drag.startX) / bounds.width * 100,
+      drag.positionY - (event.clientY - drag.startY) / bounds.height * 100)
+  }
+
+  function nudgeHeroPosition(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const step = event.shiftKey ? 5 : 1
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
+    event.preventDefault()
+    setHeroPosition(heroPositionX + (event.key === 'ArrowLeft' ? step : event.key === 'ArrowRight' ? -step : 0),
+      heroPositionY + (event.key === 'ArrowUp' ? step : event.key === 'ArrowDown' ? -step : 0))
+  }
+
   return <section className="customer-panel invitation-editor" dir="rtl">
     <div className="list-heading"><div><h2>إعداد الدعوة ومعاينتها</h2><span>{invitationQuery.data?.templateName} · إصدار {invitationQuery.data?.templateVersionNumber}</span></div><div className="form-actions"><span>الحالة: {statusLabel(invitationQuery.data?.status)}</span><button className="text-button" disabled={invitationQuery.isFetching} onClick={() => void invitationQuery.refetch()} type="button">{invitationQuery.isFetching ? 'جارٍ تحديث الحالة...' : 'تحديث الحالة'}</button></div></div>
     {invitationQuery.isPending && <p role="status">جارٍ تحميل إعدادات الدعوة...</p>}
@@ -206,15 +265,17 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
         })}</div>
       </>}
 
-      {mediaIds.some((id) => invitationQuery.data!.availableMedia.find((media) => media.mediaId === id)?.mediaType === 'Image') && <>
+      {invitationQuery.data.rendererKey === 'editorial-luxury' && heroImageId && <>
         <h3>ضبط صورة الهيرو</h3>
-        <p className="invitation-media-order-hint">الصورة الأولى في ترتيب الصور هي صورة الهيرو. غيّر التكبير ومكان التركيز، ثم احفظ لمعاينة النتيجة على الدعوة.</p>
-        <label htmlFor="invitation-hero-zoom">حجم الصورة: {customizations.heroZoom ?? '103'}%</label>
-        <input id="invitation-hero-zoom" max="200" min="100" onChange={(event) => setCustomizations((items) => ({ ...items, heroZoom: event.target.value }))} step="1" type="range" value={customizations.heroZoom ?? '103'} />
-        <label htmlFor="invitation-hero-position-x">الجزء الظاهر أفقيًا: {customizations.heroPositionX ?? '50'}%</label>
-        <input id="invitation-hero-position-x" max="100" min="0" onChange={(event) => setCustomizations((items) => ({ ...items, heroPositionX: event.target.value }))} step="1" type="range" value={customizations.heroPositionX ?? '50'} />
-        <label htmlFor="invitation-hero-position-y">الجزء الظاهر رأسيًا: {customizations.heroPositionY ?? '42'}%</label>
-        <input id="invitation-hero-position-y" max="100" min="0" onChange={(event) => setCustomizations((items) => ({ ...items, heroPositionY: event.target.value }))} step="1" type="range" value={customizations.heroPositionY ?? '42'} />
+        <p className="invitation-media-order-hint">اسحب الصورة داخل الإطار لتحديد الجزء الظاهر. الصورة الأولى في ترتيب الصور هي صورة الهيرو.</p>
+        {heroImageUrl
+          ? <div aria-label="معاينة قص صورة الهيرو. اسحب الصورة لضبط الجزء الظاهر، أو استخدم أسهم لوحة المفاتيح." className="invitation-hero-crop" onKeyDown={nudgeHeroPosition} onLostPointerCapture={() => { heroDragRef.current = null }} onPointerCancel={() => { heroDragRef.current = null }} onPointerDown={startHeroDrag} onPointerMove={moveHeroDrag} onPointerUp={() => { heroDragRef.current = null }} ref={heroCropRef} role="group" tabIndex={0}>
+              <img alt="معاينة صورة الهيرو" draggable={false} src={heroImageUrl} style={{ objectPosition: `${heroPositionX}% ${heroPositionY}%`, transform: `scale(${heroZoom / 100})` }} />
+              <span>اسحب لضبط الصورة</span>
+            </div>
+          : heroImageError ? <p className="form-error" role="alert">{heroImageError}</p> : <p className="invitation-media-order-hint" role="status">جارٍ تحميل معاينة الصورة...</p>}
+        <label htmlFor="invitation-hero-zoom">تكبير الصورة: {heroZoom}%</label>
+        <input id="invitation-hero-zoom" max="200" min="100" onChange={(event) => setCustomizations((items) => ({ ...items, heroZoom: event.target.value }))} step="1" type="range" value={heroZoom} />
       </>}
 
       {saveMutation.isError && <p className="form-error" role="alert">{saveMutation.error.message}</p>}

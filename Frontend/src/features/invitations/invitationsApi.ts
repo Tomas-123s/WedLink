@@ -31,6 +31,7 @@ export interface InvitationDraft {
   musicTrackId: number | null
   templateName: string
   templateVersionNumber: string
+  rendererKey: 'editorial-luxury' | 'default'
   brideName: string
   groomName: string
   weddingDateTimeLocal: string | null
@@ -325,6 +326,12 @@ export async function getPreviewMedia(token: string, mediaId: number): Promise<s
   const response = await fetch(`/api/v1/invitation-previews/current/media/${mediaId}`, {
     credentials: 'omit', headers: { Authorization: `Bearer ${token}` },
   })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return URL.createObjectURL(await response.blob())
+}
+
+export async function getAdminInvitationMedia(orderId: number, mediaId: number): Promise<string> {
+  const response = await fetch(`${adminPath}/${orderId}/customer-submission/media/${mediaId}/content`, { credentials: 'include' })
   if (!response.ok) throw new Error(await errorMessage(response))
   return URL.createObjectURL(await response.blob())
 }

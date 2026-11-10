@@ -193,7 +193,7 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
                          join invitation in db.Invitations.AsNoTracking() on order.OrderId equals invitation.OrderId into invitations
                          from invitation in invitations.DefaultIfEmpty()
                          where order.OrderId == orderId && order.DeletedAt == null
-                         select new { order.SelectedTemplateVersionId, template.Name, version.VersionNumber, submission, invitation })
+                         select new { order.SelectedTemplateVersionId, template.Name, version.VersionNumber, version.PackageKey, submission, invitation })
             .FirstOrDefaultAsync(cancellationToken);
         if (row is null) return null;
 
@@ -237,7 +237,7 @@ public sealed class EfInvitationRepository(WedLinkDbContext db, TimeProvider tim
         if (row.invitation?.ExpiresAt is DateTimeOffset expiry && expiry <= timeProvider.GetUtcNow()
             && currentStatus is ("Published" or "Paused")) currentStatus = "Expired";
         return new InvitationData(orderId, row.invitation?.InvitationId, row.SelectedTemplateVersionId, row.invitation?.MusicTrackId, row.Name,
-            row.VersionNumber, brideName, groomName,
+            row.VersionNumber, ResolvePublicRendererKey(row.PackageKey), brideName, groomName,
             row.invitation?.WeddingDateTimeLocal ?? row.submission?.WeddingDateTimeLocal,
             row.invitation?.TimeZoneId ?? row.submission?.TimeZoneId ?? "Africa/Cairo",
             row.invitation?.VenueName ?? row.submission?.VenueName, row.invitation?.VenueAddress ?? row.submission?.VenueAddress,

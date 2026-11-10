@@ -5,7 +5,7 @@ public sealed record InvitationMediaData(int MediaId, string MediaType, string O
 public sealed record PreviewReviewEventData(int EventId, string Source, string Action, string? Comment, string? AdminUserId, DateTimeOffset CreatedAt);
 
 public sealed record InvitationData(
-    int OrderId, int? InvitationId, int TemplateVersionId, int? MusicTrackId, string TemplateName, string TemplateVersionNumber,
+    int OrderId, int? InvitationId, int TemplateVersionId, int? MusicTrackId, string TemplateName, string TemplateVersionNumber, string RendererKey,
     string BrideName, string GroomName, DateTime? WeddingDateTimeLocal, string TimeZoneId,
     string? VenueName, string? VenueAddress, string? LocationUrl, string? CustomizationsJson,
     string Status, string Slug, DateTimeOffset? PublishedAt, DateTimeOffset? ExpiresAt, DateTimeOffset? PausedAt,
