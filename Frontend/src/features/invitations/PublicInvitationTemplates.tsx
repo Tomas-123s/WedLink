@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from 'react'
 import { formatInvitationLocalDate, invitationLocalDateToEpoch, submitGuestMessage, submitRsvp, type GuestInteractions, type PublicInvitation } from './invitationsApi'
 
 const countdownNumber = new Intl.NumberFormat('ar-EG', { minimumIntegerDigits: 2, useGrouping: false })
@@ -44,6 +44,14 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
   const date = weddingDate(item.weddingDateTimeLocal, item.timeZoneId)
   const contactUrl = invitationContactUrl(item.brideName, item.groomName)
   const customizations = item.customizations ?? {}
+  const heroZoomValue = Number(customizations.heroZoom)
+  const heroPositionXValue = Number(customizations.heroPositionX)
+  const heroPositionYValue = Number(customizations.heroPositionY)
+  const heroImageStyle = {
+    '--hero-image-zoom': String(Number.isFinite(heroZoomValue) ? Math.min(200, Math.max(100, heroZoomValue)) / 100 : 1.03),
+    '--hero-image-position-x': `${Number.isFinite(heroPositionXValue) ? Math.min(100, Math.max(0, heroPositionXValue)) : 50}%`,
+    '--hero-image-position-y': `${Number.isFinite(heroPositionYValue) ? Math.min(100, Math.max(0, heroPositionYValue)) : 42}%`,
+  } as CSSProperties
   const enabledKeys = new Set(item.features.filter((feature) => feature.isEnabled).map((feature) => feature.key))
   const countdownMessage = typeof customizations.countdown === 'string' ? customizations.countdown.trim() : ''
   const publicCustomizations = Object.entries(customizations).filter(([key, value]) => key !== 'countdown' && enabledKeys.has(key) && String(value).trim())
@@ -142,7 +150,7 @@ export function EditorialLuxuryTemplate({ item, slug, guests, previewMode = fals
     <section className="editorial-luxury-hero" id="invitation-hero" ref={heroRef}>
       {heroPortrait && <>
         <img aria-hidden="true" alt="" className="editorial-luxury-hero__image-backdrop" decoding="async" fetchPriority="low" src={heroPortrait.url} />
-        <img className="editorial-luxury-hero__image" alt={`صورة للعروسين ${item.brideName} و${item.groomName}`} fetchPriority="high" src={heroPortrait.url} />
+        <img className="editorial-luxury-hero__image" alt={`صورة للعروسين ${item.brideName} و${item.groomName}`} fetchPriority="high" src={heroPortrait.url} style={heroImageStyle} />
       </>}
       <div className="editorial-luxury-hero__shade" />
       <FloralMark className="editorial-luxury-hero__botanical editorial-luxury-hero__botanical--right" />

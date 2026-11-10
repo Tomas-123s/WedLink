@@ -206,6 +206,17 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
         })}</div>
       </>}
 
+      {mediaIds.some((id) => invitationQuery.data!.availableMedia.find((media) => media.mediaId === id)?.mediaType === 'Image') && <>
+        <h3>ضبط صورة الهيرو</h3>
+        <p className="invitation-media-order-hint">الصورة الأولى في ترتيب الصور هي صورة الهيرو. غيّر التكبير ومكان التركيز، ثم احفظ لمعاينة النتيجة على الدعوة.</p>
+        <label htmlFor="invitation-hero-zoom">حجم الصورة: {customizations.heroZoom ?? '103'}%</label>
+        <input id="invitation-hero-zoom" max="200" min="100" onChange={(event) => setCustomizations((items) => ({ ...items, heroZoom: event.target.value }))} step="1" type="range" value={customizations.heroZoom ?? '103'} />
+        <label htmlFor="invitation-hero-position-x">الجزء الظاهر أفقيًا: {customizations.heroPositionX ?? '50'}%</label>
+        <input id="invitation-hero-position-x" max="100" min="0" onChange={(event) => setCustomizations((items) => ({ ...items, heroPositionX: event.target.value }))} step="1" type="range" value={customizations.heroPositionX ?? '50'} />
+        <label htmlFor="invitation-hero-position-y">الجزء الظاهر رأسيًا: {customizations.heroPositionY ?? '42'}%</label>
+        <input id="invitation-hero-position-y" max="100" min="0" onChange={(event) => setCustomizations((items) => ({ ...items, heroPositionY: event.target.value }))} step="1" type="range" value={customizations.heroPositionY ?? '42'} />
+      </>}
+
       {saveMutation.isError && <p className="form-error" role="alert">{saveMutation.error.message}</p>}
       {saveMutation.isSuccess && <p className="success-message" role="status">{saveMutation.data?.status === 'Published' ? 'تم حفظ التعديلات وتحديث الدعوة على الرابط المنشور نفسه.' : saveMutation.data?.status === 'Paused' ? 'تم حفظ التعديلات. الرابط ما زال موقوفًا؛ أعد تفعيله عند الانتهاء.' : saveMutation.data?.status === 'Draft' ? 'تم حفظ الدعوة كمسودة. لأن بياناتها تغيرت، أنشئ رابط معاينة جديدًا ليوافق العميل عليها قبل إنشاء البطاقة النهائية.' : 'تم حفظ الدعوة مع الاحتفاظ بموافقة العميل.'}</p>}
       <div className="form-actions"><button className="primary-button" disabled={saveMutation.isPending || uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} type="submit">{saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</button><button className="secondary-button" disabled={saveMutation.isPending || previewMutation.isPending || !invitationQuery.data.invitationId || ['Published', 'Expired'].includes(invitationQuery.data.status)} onClick={() => previewMutation.mutate()} type="button">{previewMutation.isPending ? 'جارٍ إنشاء الرابط...' : 'إنشاء رابط معاينة'}</button></div>

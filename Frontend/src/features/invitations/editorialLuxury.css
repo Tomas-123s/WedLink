@@ -1029,7 +1029,7 @@
   text-align: center;
 }
 
-.editorial-luxury-hero__image { position: absolute; z-index: -2; inset: -4% 0; width: 100%; height: 108%; object-fit: cover; object-position: center 42%; transform: translateY(var(--hero-parallax, 0px)) scale(1.025); filter: saturate(.8); }
+.editorial-luxury-hero__image { position: absolute; z-index: -2; inset: -4% 0; width: 100%; height: 108%; object-fit: cover; object-position: var(--hero-image-position-x, 50%) var(--hero-image-position-y, 42%); transform: translateY(var(--hero-parallax, 0px)) scale(var(--hero-image-zoom, 1.025)); filter: saturate(.8); }
 .editorial-luxury-hero__image-backdrop { display: none; }
 .editorial-luxury-hero__shade { position: absolute; z-index: -1; inset: -4% 0; width: 100%; height: 108%; background: linear-gradient(180deg, rgb(15 15 15 / 12%) 8%, rgb(15 15 15 / 18%) 30%, rgb(15 15 15 / 42%) 53%, #151515 100%), linear-gradient(90deg, rgb(21 21 21 / 20%), transparent 35%, transparent 65%, rgb(21 21 21 / 20%)); }
 .editorial-luxury-hero__copy { width: min(100%, 58rem); }
@@ -1223,7 +1223,7 @@
 .editorial-luxury-contact-link:hover { border-color: var(--el-champagne); background: rgb(198 166 107 / 10%); color: var(--el-champagne); }
 .editorial-luxury-contact-link:focus-visible { outline: 2px solid var(--el-champagne); outline-offset: 4px; }
 
-@keyframes el-hero-arrive { from { opacity: .25; transform: scale(1.1); filter: blur(7px) saturate(.55); } to { opacity: 1; transform: translateY(var(--hero-parallax, 0px)) scale(1.025); filter: blur(0) saturate(.8); } }
+@keyframes el-hero-arrive { from { opacity: .25; transform: scale(1.1); filter: blur(7px) saturate(.55); } to { opacity: 1; transform: translateY(var(--hero-parallax, 0px)) scale(var(--hero-image-zoom, 1.025)); filter: blur(0) saturate(.8); } }
 @keyframes el-copy-arrive { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes el-name-arrive { from { opacity: 0; transform: translateY(22px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 @keyframes el-flower-breathe { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
@@ -1238,7 +1238,7 @@
   .editorial-luxury-floating-flower--5,
   .editorial-luxury-floating-flower--6 { display: none; }
   .editorial-luxury-hero { min-height: 100svh; min-height: 100vh; align-items: end; padding: 6rem 1rem 4.2rem; }
-  .editorial-luxury-hero__image { object-position: center; }
+  .editorial-luxury-hero__image { object-position: var(--hero-image-position-x, 50%) var(--hero-image-position-y, 42%); }
   .editorial-luxury-hero__names { flex-direction: column; gap: .03em; font-size: clamp(3.5rem, 18vw, 6.2rem); }
   .editorial-luxury-hero__names i { line-height: .9; }
   .editorial-luxury-hero__botanical { top: 11%; width: 4.8rem; }
