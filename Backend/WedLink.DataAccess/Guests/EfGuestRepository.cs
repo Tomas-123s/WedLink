@@ -128,7 +128,7 @@ public sealed class EfGuestRepository(WedLinkDbContext db) : IGuestRepository
     {
         var invitation = await db.Invitations.FirstOrDefaultAsync(item => item.InvitationId == invitationId
             && db.Orders.Any(order => order.OrderId == item.OrderId && order.DeletedAt == null), cancellationToken);
-        if (invitation is null || invitation.Status is "Published" or "Expired") return false;
+        if (invitation is null || invitation.Status == "Expired") return false;
         if (!await IsFeatureEnabledAsync(invitation.TemplateVersionId, "music", cancellationToken)) return false;
         MusicTrack? track = null;
         if (musicTrackId is int id)

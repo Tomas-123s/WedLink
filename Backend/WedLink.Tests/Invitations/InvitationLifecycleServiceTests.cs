@@ -38,7 +38,7 @@ public sealed class InvitationLifecycleServiceTests
     }
 
     private static InvitationData Invitation(DateTime? weddingDate) => new(
-        42, 8, 3, null, "Classic", "1", "Bride", "Groom", weddingDate, "Africa/Cairo", null, null, null, null,
+        42, 8, 3, null, "Classic", "1", "default", "Bride", "Groom", weddingDate, "Africa/Cairo", null, null, null, null,
         "Draft", "", null, null, null, null, false, [], [], [], []);
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

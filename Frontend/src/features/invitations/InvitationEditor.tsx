@@ -46,10 +46,11 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   const [locationUrl, setLocationUrl] = useState('')
   const [customizations, setCustomizations] = useState<Record<string, string>>({})
   const [mediaIds, setMediaIds] = useState<number[]>([])
-  const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [previewLink, setPreviewLink] = useState<{ url: string; expiresAt: string } | null>(null)
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null)
   const [heroImageError, setHeroImageError] = useState<string | null>(null)
+  const hydratedOrderIdRef = useRef<number | null>(null)
   const heroCropRef = useRef<HTMLDivElement>(null)
   const heroDragRef = useRef<{ pointerId: number; startX: number; startY: number; positionX: number; positionY: number } | null>(null)
   const heroImageId = mediaIds.find((id) => invitationQuery.data?.availableMedia.find((media) => media.mediaId === id)?.mediaType === 'Image')
@@ -84,7 +85,8 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
 
   useEffect(() => {
     const item = invitationQuery.data
-    if (!item) return
+    if (!item || hydratedOrderIdRef.current === orderId) return
+    hydratedOrderIdRef.current = orderId
     setBrideName(item.brideName)
     setGroomName(item.groomName)
     setWeddingDateTimeLocal(localDateValue(item.weddingDateTimeLocal))
@@ -93,7 +95,7 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
     setLocationUrl(item.locationUrl ?? '')
     setCustomizations(Object.fromEntries(Object.entries(item.customizations ?? {}).map(([key, value]) => [key, String(value)])))
     setMediaIds(item.selectedMediaIds)
-  }, [invitationQuery.data])
+  }, [invitationQuery.data, orderId])
 
   const saveMutation = useMutation({
     mutationFn: () => saveInvitation(orderId, {
@@ -104,14 +106,22 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
     onSuccess: async (data) => { queryClient.setQueryData(['invitation', orderId], data); setPreviewLink(null) },
   })
   const uploadMediaMutation = useMutation({
-    mutationFn: () => uploadInvitationMedia(orderId, mediaFile!),
-    onSuccess: (uploaded) => {
-      queryClient.setQueryData<InvitationDraft>(['invitation', orderId], (current) => current ? {
-        ...current,
-        availableMedia: [...current.availableMedia, uploaded],
-        selectedMediaIds: [...new Set([...current.selectedMediaIds, uploaded.mediaId])],
-      } : current)
-      setMediaFile(null)
+    mutationFn: async () => {
+      let uploadedCount = 0
+      for (const file of mediaFiles) {
+        const uploaded = await uploadInvitationMedia(orderId, file)
+        uploadedCount += 1
+        queryClient.setQueryData<InvitationDraft>(['invitation', orderId], (current) => current ? {
+          ...current,
+          availableMedia: [...current.availableMedia, uploaded],
+          selectedMediaIds: [...new Set([...current.selectedMediaIds, uploaded.mediaId])],
+        } : current)
+        setMediaIds((current) => current.includes(uploaded.mediaId) ? current : [...current, uploaded.mediaId])
+        setMediaFiles((current) => current.filter((pendingFile) => pendingFile !== file))
+      }
+      return uploadedCount
+    },
+    onSuccess: () => {
       const input = document.getElementById('invitation-media-upload') as HTMLInputElement | null
       if (input) input.value = ''
     },
@@ -156,7 +166,11 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
   })
   const musicMutation = useMutation({
     mutationFn: (trackId: number | null) => selectInvitationMusic(invitationQuery.data!.invitationId!, trackId),
-    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['invitation', orderId] }) },
+    onSuccess: (_, trackId) => queryClient.setQueryData<InvitationDraft>(['invitation', orderId], (current) => current ? {
+      ...current,
+      musicTrackId: trackId,
+      status: current.status === 'Approved' ? 'Draft' : current.status,
+    } : current),
   })
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -225,28 +239,31 @@ export function InvitationEditor({ orderId }: { orderId: number }) {
       </>}
       {invitationQuery.data.features.some((feature) => feature.key === 'music' && feature.isEnabled) && <>
         <label htmlFor="invitation-music-track">اختيار مسار من مكتبة الموسيقى</label>
-        <select id="invitation-music-track" disabled={musicMutation.isPending || musicTracksQuery.isPending || activeMusicTracks.length === 0 || !invitationQuery.data.invitationId || ['Published', 'Expired'].includes(invitationQuery.data.status)} value={invitationQuery.data.musicTrackId ?? ''} onChange={(event) => musicMutation.mutate(event.target.value ? Number(event.target.value) : null)}>
+        <select id="invitation-music-track" disabled={musicMutation.isPending || musicTracksQuery.isPending || activeMusicTracks.length === 0 || !invitationQuery.data.invitationId || invitationQuery.data.status === 'Expired'} value={invitationQuery.data.musicTrackId ?? ''} onChange={(event) => musicMutation.mutate(event.target.value ? Number(event.target.value) : null)}>
           <option value="">{musicTracksQuery.isPending ? 'جارٍ تحميل المسارات...' : activeMusicTracks.length ? 'بدون موسيقى مكتبة' : 'لا توجد مسارات نشطة'}</option>
           {activeMusicTracks.map((track) => <option key={track.musicTrackId} value={track.musicTrackId}>{track.title}{track.artist ? ` · ${track.artist}` : ''}</option>)}
         </select>
+        {!invitationQuery.data.invitationId && <p className="form-hint">احفظ بيانات الدعوة أولًا، وبعدها تقدر تختار الموسيقى.</p>}
         {musicTracksQuery.isError && <p className="form-error" role="alert">تعذر تحميل مكتبة الموسيقى: {musicTracksQuery.error.message}</p>}
         {!musicTracksQuery.isPending && !musicTracksQuery.isError && activeMusicTracks.length === 0 && <p className="form-hint">أضف مسارًا مرخصًا وفعّله أولًا من <a href="/admin/music">مكتبة الموسيقى</a>.</p>}
-        {invitationQuery.data.status === 'Published' && <p className="form-hint">أوقف الرابط مؤقتًا أولًا لتغيير الموسيقى، ثم أعد تفعيله بعد الحفظ.</p>}
+        {invitationQuery.data.status === 'Published' && <p className="form-hint">تقدر تغيّر الموسيقى مباشرة، وسيظهر الاختيار الجديد للزوار عند فتح الدعوة.</p>}
         {invitationQuery.data.status === 'Paused' && <p className="form-hint">اختيار الموسيقى متاح والرابط موقوف. سيظل الرابط موقوفًا حتى تضغط «إعادة التفعيل».</p>}
         {invitationQuery.data.status === 'Expired' && <p className="form-hint">انتهت صلاحية الرابط؛ لا يمكن تغيير الموسيقى.</p>}
         {musicMutation.isError && <p className="form-error" role="alert">{musicMutation.error.message}</p>}
+        {musicMutation.isSuccess && <p className="success-message" role="status">تم تحديث موسيقى الدعوة.</p>}
       </>}
 
       {(invitationQuery.data.availableMedia.length > 0 || invitationQuery.data.features.some((feature) => ['gallery', 'video'].includes(feature.key) && feature.isEnabled)) && <>
         <h3>الصور والوسائط التي ستظهر في الدعوة</h3>
         <p className="invitation-media-order-hint">حدد الملفات، ثم استخدم السهمين لترتيب الصور في المعرض.</p>
         {invitationQuery.data.features.some((feature) => ['gallery', 'video'].includes(feature.key) && feature.isEnabled) && <div className="invitation-media-upload">
-          <label htmlFor="invitation-media-upload">إضافة صورة أو فيديو من جهازك</label>
-          <div><input accept=".jpg,.jpeg,.png,.webp,.mp4" disabled={uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} id="invitation-media-upload" onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} type="file" />
-            <button className="secondary-button" disabled={!mediaFile || uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} onClick={() => uploadMediaMutation.mutate()} type="button">{uploadMediaMutation.isPending ? 'جارٍ رفع الملف...' : 'رفع وإضافة'}</button></div>
-          <small>الصور حتى 10MB والفيديو MP4 حتى 100MB. يمكنك رفع ملف بديل ثم إلغاء اختيار الملف القديم؛ تُطبّق حدود عدد الملفات عند حفظ الدعوة.</small>
+          <label htmlFor="invitation-media-upload">إضافة صور أو فيديوهات من جهازك</label>
+          <div><input accept=".jpg,.jpeg,.png,.webp,.mp4" disabled={uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} id="invitation-media-upload" multiple onChange={(event) => setMediaFiles(Array.from(event.target.files ?? []))} type="file" />
+            <button className="secondary-button" disabled={!mediaFiles.length || uploadMediaMutation.isPending || invitationQuery.data.status === 'Expired'} onClick={() => uploadMediaMutation.mutate()} type="button">{uploadMediaMutation.isPending ? 'جارٍ رفع الملفات...' : `رفع وإضافة${mediaFiles.length ? ` (${mediaFiles.length})` : ''}`}</button></div>
+          {mediaFiles.length > 0 && <small>الملفات المختارة: {mediaFiles.map((file) => file.name).join('، ')}</small>}
+          <small>تقدر تختار أكتر من ملف مرة واحدة. الصور حتى 10MB والفيديو MP4 حتى 100MB لكل ملف؛ تُطبّق حدود عدد الملفات عند حفظ الدعوة.</small>
           {uploadMediaMutation.isError && <p className="form-error" role="alert">{uploadMediaMutation.error.message}</p>}
-          {uploadMediaMutation.isSuccess && <p className="success-message" role="status">تم رفع الملف وإضافته للاختيارات. اضغط «حفظ التعديلات» لنشره على الدعوة.</p>}
+          {uploadMediaMutation.isSuccess && <p className="success-message" role="status">تم رفع {uploadMediaMutation.data} ملف وإضافته تلقائيًا للاختيارات. اضغط «حفظ التعديلات» لنشره على الدعوة.</p>}
           {invitationQuery.data.status === 'Expired' && <p className="form-hint">انتهت صلاحية الرابط؛ لا يمكن إضافة وسائط إلى هذه الدعوة.</p>}
         </div>}
         <div className="invitation-media-order-list">{invitationQuery.data.availableMedia.map((media) => {
